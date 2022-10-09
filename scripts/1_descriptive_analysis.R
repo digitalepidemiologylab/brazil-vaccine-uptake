@@ -13,13 +13,13 @@ while (require("pacman") == FALSE) {
 
 # load packages
 p_load(tidyverse, readr, lubridate, plotly, slider, zoo, ggpubr, caTools, gtsummary,
-       padr, forecast, gridExtra, maps, ggforce,
-       ggmap)
+       padr, forecast, gridExtra, maps, ggforce, geobr, rnaturalearth,
+       ggmap, sf, rnaturalearth, rnaturalearthdata, ggspatial)
 
 # 2 - Import data --------------------
 # This csv is a copy of the file '/drives/sdd/vaccine_paho_project/vaccine_classification/data/predict_data/precovid_paho_290621_sentiment/all_features_predictions_2021-07-13_09-40-16_018009/tweets_with_predicted_labels_2013-01-01_to_2019-12-31.csv'
 # The below csv is not included in the Github repo; the path should be changed accordingly
-df <- read_csv('data/tweets_with_predicted_labels_2013-01-01_to_2019-12-31.csv')
+df <- read_csv('data/big_files/tweets_with_predicted_labels_2013-01-01_to_2019-12-31.csv')
 
 df_an_all <- read_csv('data/cleaned_labels_min-labels-cutoff-3_majority_all.csv')
 df_an_mturk <- read_csv('data/cleaned_labels_min-labels-cutoff-3_majority_mturk.csv')
@@ -81,8 +81,8 @@ write_csv(df_clean_geo, 'data/tweets_with_predicted_labels_filtered_BR_PT_geo.cs
 # 5 - Import cleaned data ----------------
 ## Steps 2-5 can be omitted
 ## Sentiment predictions
-df_clean <- read_csv('data/tweets_with_predicted_labels_filtered_BR_PT.csv')
-df_clean_geo <- read_csv('data/tweets_with_predicted_labels_filtered_BR_PT_geo.csv')
+df_clean <- read_csv('data/big_files/tweets_with_predicted_labels_filtered_BR_PT.csv')
+df_clean_geo <- read_csv('data/big_files/tweets_with_predicted_labels_filtered_BR_PT_geo.csv')
 
 # 6 - Select coverage data -------------
 # Vaccine uptake data from: http://tabnet.datasus.gov.br/cgi/dhdat.exe?bd_pni/dpnibr.def
@@ -96,11 +96,14 @@ df_dtp$Date <- as.Date(paste0(df_dtp$Date, "/01"), format = "%Y/%b/%d") # correc
 df_dtp <- df_dtp %>% 
   rbind(c("2019-12-31", rep(NA, 41))) %>% # add last date
   pad(interval = "day") %>%  # fill missing dates
-  fill(colnames(df_dtp), .direction = "down") # fill NA with previous values
+  fill(colnames(df_dtp), .direction = "down") # fill NA with previous values 
+
 
 for (i in 2:29) {
   df_dtp[[i]] <- as.numeric(df_dtp[[i]])
 }
+
+write.csv(df_dtp, "data/uptake_br_dtp_2013_2019_clean.csv", row.names = FALSE)
 
 # 7 - Descriptive analysis --------------
 ## Annotations ---------------
@@ -155,25 +158,29 @@ sentiment_time_horiz_allgeo$sentiment <- runmean(sentiment_time_horiz_allgeo$sen
 
 plot_time <- sentiment_time_horiz_allgeo[, c(1,6)] %>% 
   ggplot(aes(x = created_at_h, y = sentiment)) +
-  geom_line(colour = "dark green") +
-  #scale_y_continuous(limits = c(-0.5, 0.5)) +
+  geom_line(colour = "dark green", size = 0.7) +
+  scale_y_continuous(limits = c(-0.5, 0.5)) +
   scale_x_datetime(date_breaks = "2 months", 
                    date_minor_breaks = "1 month", 
                    date_labels = "%d %b %Y",
                    limits = c(min(sentiment_time_horiz_allgeo$created_at_h), 
                               max(sentiment_time_horiz_allgeo$created_at_h))) +
   geom_hline(yintercept=0,  linetype = "dashed", color = "red", size=0.5) +
-  ggtitle('7-day moving average of Twitter vaccine sentiment index \nin Brazil, January 2013 to December 2019') +
-  labs(x = "Date (day, month and year)", y = "Sentiment index") +
+  ggtitle('7-day moving average of Twitter vaccine sentiment index \nin Brazil, January 2013 to December 2019 (n = 2,197,090)') +
+  labs(y = "TVS index") +
   #geom_smooth(method = "loess", se = FALSE) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90),
-        plot.title = element_text(size = 12, hjust = 0.5))
+        axis.text = element_text(size = 22),
+        axis.title.x = element_blank(),
+        axis.title = element_text(size = 22),
+        plot.title = element_text(size = 30, hjust = 0.5))
 
 # Show and save plot
 plot_time
 
-ggsave("outputs/twitter_sentiment_br.png", plot_time)
+ggsave("outputs/twitter_sentiment_br.png", plot_time,
+       width = 12.2, height = 5.1)
 
 # Interactive plot (plotly)
 plotly_time <- ggplotly(plot_time) 
@@ -464,6 +471,7 @@ df_clean_geo <- df_clean_geo %>%
                                     longitude <= br$Longitude_xmax[31] ~
                                     br$LocationCode[31],
                                   TRUE ~ "NA"))
+df_clean_geo_raw <- df_clean_geo
 
 df_clean_geo <- br %>% 
   select(LocationCode, LocationName, StatesCode) %>% 
@@ -483,13 +491,13 @@ case_when_br <- function(df, geo_df, br_state){
                                     TRUE ~ 'NA'))
 }
 
-case_when_br(df_clean_geo, br, 1)
+case_when_br(df_clean_geo, br, 20)
 
 # Check that df_clean_geo has LocationCode
 unique(df_clean_geo$LocationCode)
 
 # Save data as csv
-write_csv(df_clean_geo, 'data/tweets_with_predicted_labels_filtered_BR_PT_geo.csv')
+write_csv(df_clean_geo, 'data/big_files/tweets_with_predicted_labels_filtered_BR_PT_geo_final.csv')
 
 ## Group data per Brazilian state -----------------------
 df_clean_geo_state <- df_clean_geo %>%
@@ -497,19 +505,20 @@ df_clean_geo_state <- df_clean_geo %>%
   mutate(year = year(created_at),
          month = month(created_at),
          week = week(created_at)) %>% 
-  group_by(date=floor_date(created_at, "1 day"), LocationCode, label) %>%
+  group_by(date=floor_date(created_at, "1 day"), StatesCode, label) %>%
   tally() %>% 
   spread(label, n) %>%
   #select(date, LocationCode, positive, neutral, negative) %>% 
   replace_na(list(positive = 0, neutral = 0, negative = 0)) %>%
   mutate(sentiment_raw = ((1 * positive) + (0 * neutral) + (-1 * negative))/ (positive + neutral + negative),
-         year = year(date)) 
+         year = year(date))  %>% 
+  rename(StatesCode = StatesCode)
 
 # Add rolling average sentiment
 df_clean_geo_state$sentiment <- runmean(df_clean_geo_state$sentiment_raw, k = 20, alg = 'exact', endrule = 'keep')  
 
 # Add names of Brasilian states
-df_clean_geo_state <- left_join(df_clean_geo_state, br[,c(2,4)], by = 'LocationCode')
+df_clean_geo_state <- full_join(df_clean_geo_state, br[,c(4, 12)], by = 'StatesCode')
 
 ## Separate Brazilian state data per year
 df_clean_geo_state_year <- df_clean_geo_state %>% 
@@ -531,16 +540,11 @@ plot_states <- df_clean_geo_state %>%
   #                                  sentiment < 0 ~ "Negative",
   #                                  TRUE ~ "Neutral")) %>% 
   filter(!is.na(LocationCode)) %>% 
-  ggplot(aes(x = date, y = sentiment, label = "")) +
-  geom_line(colour = df_clean_geo_state$color)
-  
-  
-  geom_link2(aes(colour = after_stat()))
-  
-  geom_line(size = 1, colour = "light grey") +
-  geom_point(aes(x = date, y = sentiment,
-                 colour = sentiment_cat),
-             size = 1) +
+  ggplot(aes(x = date, y = sentiment)) +
+  geom_line(colour = "dark green") +
+  # geom_point(aes(x = date, y = sentiment,
+  #                colour = sentiment_cat),
+  #            size = 1) +
   #scale_y_continuous(limits = c(-0.5, 0.5)) +
   scale_x_datetime(date_breaks = "6 months", 
                    #date_minor_breaks = "1 month", 
@@ -565,12 +569,13 @@ plotly_states <- ggplotly(plot_states)
 # Show interactive plot
 plotly_states
 
-# Select data for maps -----------------------
+# Maps in R ----------------
+## Select data for maps -----------------------
 
-## Group data for all years per state ----------
+### Group data for all years per state ----------
 df_clean_geo_state_year_all <- df_clean_geo_state_year %>% 
-  select(LocationCode, negative, neutral, positive) %>% 
-  group_by(LocationCode) %>% 
+  select(StatesCode, negative, neutral, positive) %>% 
+  group_by(StatesCode) %>% 
   summarise(Negative = sum(negative),
             Neutral = sum(neutral),
             Positive = sum(positive)) %>% 
@@ -580,10 +585,10 @@ df_clean_geo_state_year_all <- df_clean_geo_state_year %>%
 # Save csv
 write.csv(df_clean_geo_state_year_all, 'data/tweets_with_predicted_labels_state_year_all.csv')
 
-## Group data by year and location and save csv ----------------
+### Group data by year and location and save csv ----------------
 df_clean_geo_state_by_year <- df_clean_geo_state_year %>% 
-  select(LocationCode, negative, neutral, positive) %>% 
-  group_by(LocationCode, year) %>% 
+  select(StatesCode, negative, neutral, positive) %>% 
+  group_by(StatesCode, year) %>% 
   summarise(negative = sum(negative),
             neutral = sum(neutral),
             positive = sum(positive)) %>% 
@@ -592,7 +597,7 @@ df_clean_geo_state_by_year <- df_clean_geo_state_year %>%
 
 write.csv(df_clean_geo_state_by_year, 'data/tweets_with_predicted_labels_by_state_year.csv')
 
-## Group data for each year and save csv -----------------
+### Group data for each year and save csv -----------------
 df_clean_geo_state_year_2019 <- df_clean_geo_state_by_year %>% 
   filter(year == "2019") 
 
@@ -623,6 +628,44 @@ write.csv(df_clean_geo_state_year_2015, 'data/tweets_with_predicted_labels_state
 write.csv(df_clean_geo_state_year_2014, 'data/tweets_with_predicted_labels_state_year_2014.csv')
 write.csv(df_clean_geo_state_year_2013, 'data/tweets_with_predicted_labels_state_year_2013.csv')
 
+## Plot map -------------
+#devtools::install_github("ropensci/rnaturalearthhires")
+world <- ne_states(returnclass = "sf")
+
+world_br <- world %>% 
+  filter(sov_a3 == "BRA") %>% 
+  arrange(iso_3166_2)
+
+world_br$sentiment <- df_clean_geo_state_year_all_RN$sentiment
+
+
+map <- world_br %>% 
+  mutate(sentiment_cat = case_when(sentiment < -0.09104 ~ "< -0.09",
+                                   sentiment > -0.09104 & sentiment < -0.05684 ~ "-0.09 to -0.06",
+                                   sentiment > -0.05684 & sentiment < -0.04495 ~ "-0.06 to -0.04",
+                                   TRUE ~ "> -0.04")) %>% 
+ggplot() +
+  geom_sf(aes(fill = world_br$sentiment)) +
+  scale_fill_viridis_c(option = "B",
+                       name = "Twitter vaccine \nsentiment index") +
+  #scale_fill_gradient2(midpoint = 0) +
+  annotation_scale(location = "br", width_hint = 0.3) +
+  annotation_north_arrow(location = "br", which_north = "true", 
+                         pad_x = unit(0.75, "in"), pad_y = unit(0.5, "in"),
+                         style = north_arrow_fancy_orienteering) +
+  # coord_sf(xlim = c(-72.9872354804, -33.7683777809), 
+  #          ylim = c(-34.7299934555, 5.24448639569 )) +
+  labs(title = 'Twitter vaccine sentiment index per \nBrazilian state, January 2013 to \nDecember 2019 (n = 1,750,294)') +
+  theme_void() +
+  theme(legend.position = c(1, 0.4),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        title = element_text(size = 14))
+
+
+map
+
+# https://mran.microsoft.com/snapshot/2020-01-29/web/packages/geobr/vignettes/intro_to_geobr.html
 
 # CODE UNDER REVIEW, NOT FINAL ------------------
 
