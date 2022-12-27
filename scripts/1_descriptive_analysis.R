@@ -13,76 +13,76 @@ while (require("pacman") == FALSE) {
 
 # load packages
 p_load(tidyverse, readr, lubridate, plotly, slider, zoo, ggpubr, caTools, gtsummary,
-       padr, forecast, gridExtra, maps, ggforce, geobr, rnaturalearth,
-       ggmap, sf, rnaturalearth, rnaturalearthdata, ggspatial)
+       padr, forecast, gridExtra, maps, ggforce, geobr, rnaturalearth, tools, DataExplorer,
+       ggmap, sf, rnaturalearth, rnaturalearthdata, ggspatial, readxl, janitor, data.table)
 
-# 2 - Import data --------------------
-# This csv is a copy of the file '/drives/sdd/vaccine_paho_project/vaccine_classification/data/predict_data/precovid_paho_290621_sentiment/all_features_predictions_2021-07-13_09-40-16_018009/tweets_with_predicted_labels_2013-01-01_to_2019-12-31.csv'
-# The below csv is not included in the Github repo; the path should be changed accordingly
-df <- read_csv('data/big_files/tweets_with_predicted_labels_2013-01-01_to_2019-12-31.csv')
+# # 2 - Import data --------------------
+# # This csv is a copy of the file '/drives/sdd/vaccine_paho_project/vaccine_classification/data/predict_data/precovid_paho_290621_sentiment/all_features_predictions_2021-07-13_09-40-16_018009/tweets_with_predicted_labels_2013-01-01_to_2019-12-31.csv'
+# # The below csv is not included in the Github repo; the path should be changed accordingly
+# df <- read_csv('data/local/tweets_with_predicted_labels_2013-01-01_to_2019-12-31.csv')
+# 
+# df_an_all <- read_csv('data/local/cleaned_labels_min-labels-cutoff-3_majority_all.csv')
+# df_an_mturk <- read_csv('data/local/cleaned_labels_min-labels-cutoff-3_majority_mturk.csv')
+# df_an_local <- read_csv('data/local/cleaned_labels_min-labels-cutoff-3_majority_local.csv')
+# df_an_public <- read_csv('data/local/cleaned_labels_min-labels-cutoff-3_majority_public.csv')
+# 
+# 
+# # 3 - Clean data ------------------
+# ## Annotations
+# df_an_all$annotation <- "all"
+# df_an_mturk$annotation <- "mturk"
+# df_an_local$annotation <- "local"
+# df_an_public$annotation <- "public"
+# 
+# df_an <- rbind(df_an_mturk, df_an_local, df_an_public) %>% 
+#   filter(question_tag == "sentiment")
+# 
+# df_an_all_clean <- df_an_all %>% 
+#   filter(question_tag == "sentiment")
 
-df_an_all <- read_csv('data/cleaned_labels_min-labels-cutoff-3_majority_all.csv')
-df_an_mturk <- read_csv('data/cleaned_labels_min-labels-cutoff-3_majority_mturk.csv')
-df_an_local <- read_csv('data/cleaned_labels_min-labels-cutoff-3_majority_local.csv')
-df_an_public <- read_csv('data/cleaned_labels_min-labels-cutoff-3_majority_public.csv')
-
-
-# 3 - Clean data ------------------
-## Annotations
-df_an_all$annotation <- "all"
-df_an_mturk$annotation <- "mturk"
-df_an_local$annotation <- "local"
-df_an_public$annotation <- "public"
-
-df_an <- rbind(df_an_mturk, df_an_local, df_an_public) %>% 
-  filter(question_tag == "sentiment")
-
-df_an_all_clean <- df_an_all %>% 
-  filter(question_tag == "sentiment")
-
-## Subset with all tweets from Brazil in Portuguese
-df_clean <- df %>%  # Select dataframe
-  filter(lang == "pt", # Select Portuguese tweets
-         country_code == "BR") %>%  #Select tweets from Brazil
-         #is_retweet==FALSE) # Discard retweets (this is currently not applied)
-  # Alvorada had wrong latitude
-  mutate(latitude = case_when(latitude == 29.9904 ~ -29.9904,
-                              TRUE ~ latitude))
-
-## Specific filtering according to geo_type
-df_clean_geo1 <- df_clean %>% 
-  filter(geo_type == 1)
-
-df_clean_geo2 <- df_clean %>% 
-  filter(geo_type == 2) %>% 
-  filter(location_type != 'country')
-
-df_clean_geo3 <- df_clean %>% 
-  filter(geo_type == 3) %>% 
-  filter(location_type == 'city' | 
-           location_type == 'place' |
-           location_type == 'admin1'|
-           location_type == 'admin2'| 
-           location_type == 'admin3' |
-           location_type == 'admin4' |
-           location_type == 'admin5' |
-           location_type == 'admin6'|
-           location_type == 'admin_other')
-
-### Merging three dataframes
-df_clean_geo <- rbind(df_clean_geo1, df_clean_geo2, df_clean_geo3) %>% 
-  mutate(latitude = case_when(latitude == 29.9904 ~ -29.9904,
-                              TRUE ~ latitude))
-
-# 4 - Save cleaned data -----------------
-write_csv(df_clean, 'data/tweets_with_predicted_labels_filtered_BR_PT.csv')
-write_csv(df_clean_geo, 'data/tweets_with_predicted_labels_filtered_BR_PT_geo.csv')
+# ## Subset with all tweets from Brazil in Portuguese
+# df_clean <- df %>%  # Select dataframe
+#   filter(lang == "pt", # Select Portuguese tweets
+#          country_code == "BR") %>%  #Select tweets from Brazil
+#          #is_retweet==FALSE) # Discard retweets (this is currently not applied)
+#   # Alvorada had wrong latitude
+#   mutate(latitude = case_when(latitude == 29.9904 ~ -29.9904,
+#                               TRUE ~ latitude))
+# 
+# ## Specific filtering according to geo_type
+# df_clean_geo1 <- df_clean %>% 
+#   filter(geo_type == 1)
+# 
+# df_clean_geo2 <- df_clean %>% 
+#   filter(geo_type == 2) %>% 
+#   filter(location_type != 'country')
+# 
+# df_clean_geo3 <- df_clean %>% 
+#   filter(geo_type == 3) %>% 
+#   filter(location_type == 'city' | 
+#            location_type == 'place' |
+#            location_type == 'admin1'|
+#            location_type == 'admin2'| 
+#            location_type == 'admin3' |
+#            location_type == 'admin4' |
+#            location_type == 'admin5' |
+#            location_type == 'admin6'|
+#            location_type == 'admin_other')
+# 
+# ### Merging three dataframes
+# df_clean_geo <- rbind(df_clean_geo1, df_clean_geo2, df_clean_geo3) %>% 
+#   mutate(latitude = case_when(latitude == 29.9904 ~ -29.9904,
+#                               TRUE ~ latitude))
+# 
+# # 4 - Save cleaned data -----------------
+# write_csv(df_clean, 'data/tweets_with_predicted_labels_filtered_BR_PT.csv')
+# write_csv(df_clean_geo, 'data/tweets_with_predicted_labels_filtered_BR_PT_geo.csv')
 
 # 5 - Import cleaned data ----------------
 ## Steps 2-5 can be omitted
 ## Sentiment predictions
-df_clean <- read_csv('data/big_files/tweets_with_predicted_labels_filtered_BR_PT.csv')
-df_clean_geo <- read_csv('data/big_files/tweets_with_predicted_labels_filtered_BR_PT_geo.csv')
+df_clean <- read_csv('data/local/tweets_with_predicted_labels_filtered_BR_PT.csv')
+df_clean_geo <- read_csv('data/local/tweets_with_predicted_labels_filtered_BR_PT_geo.csv')
 
 # 6 - Select coverage data -------------
 # Vaccine uptake data from: http://tabnet.datasus.gov.br/cgi/dhdat.exe?bd_pni/dpnibr.def
@@ -103,15 +103,68 @@ for (i in 2:29) {
   df_dtp[[i]] <- as.numeric(df_dtp[[i]])
 }
 
+
+## Import Brazil states boundary boxes -------------
+br <- read_csv('data/brazil_states_boxes.csv')
+# Last four states correspond to Brazilian islands
+
+br_states <- data.frame(LocationName = c(unique(br$LocationName)),
+                        StatesCode = c('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 
+                                       'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO',
+                                       'RR', 'SC', 'SP', 'SE', 'TO', 'UNK'))
+br <- right_join(br, br_states, by = 'LocationName') %>% 
+  filter(LocationName != "Name Unknown")
+
+
+## Import population data
+temp = tempfile(fileext = ".xls")
+dataURL <- "https://ftp.ibge.gov.br/Estimativas_de_Populacao/Estimativas_2020/serie_2001_2020_TCU.xls"
+download.file(dataURL, destfile=temp, mode='wb')
+
+df_pop <- read_excel(temp, sheet = 1)
+df_pop_clean <- df_pop[c(4, 6:38),] %>% 
+  row_to_names(row_number = 1) %>% 
+  arrange(`Unidades da Federação`) 
+
+df_pop_clean$`Unidades da Federação` <- toTitleCase(df_pop_clean$`Unidades da Federação`)
+
+df_pop_clean <- df_pop_clean %>% 
+  left_join(br, by = c("Unidades da Federação" = "LocationNameFull")) %>% 
+  select(LocationCode, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`,
+         `2019`) %>% 
+  filter(!is.na(LocationCode)) %>% 
+  t() %>% 
+  row_to_names(row_number = 1) %>% 
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  type.convert(as.is = TRUE) %>% 
+  mutate(Total_pop = (rowSums(.[-1])))
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+# Clean and write dtp data
+df_dtp <- df_dtp %>%
+  mutate(year = year(Date),
+         Total = rowSums(.[-1]))
+
+for (i in 2:29) {
+    df_dtp[[i]] <- round((df_dtp[[i]]/df_pop_clean[[i]]) * 100000, digits = 2)
+}
+
+df_dtp <- df_dtp %>%
+  mutate(year_month = format(Date, "%Y-%m"))
+
+
 write.csv(df_dtp, "data/uptake_br_dtp_2013_2019_clean.csv", row.names = FALSE)
 
+## Import clean dtp data --------------
+df_dtp <- read_csv("data/uptake_br_dtp_2013_2019_clean.csv")
+
 # 7 - Descriptive analysis --------------
-## Annotations ---------------
-names(df_an_all_clean)
-
-length(unique(df_an_all_clean$id)) # number of unique tweets
-
-table(df_an$annotation)
+# ## Annotations ---------------
+# names(df_an_all_clean)
+# 
+# length(unique(df_an_all_clean$id)) # number of unique tweets
+# 
+# table(df_an$annotation)
 
 ## Twitter data ------------------
 names(df_clean)
@@ -232,16 +285,22 @@ plotly_time_geo <- ggplotly(plot_time_geo)
 plotly_time_geo
 
 ## Time series for DTP vaccine uptake --------------
+# Import df_dtp
+#df_dtp <- read_csv("data/uptake_br_dtp_2013_2019_clean.csv")
+mean_hline <- mean(df_dtp$Total)
+
 plot_dtp <- df_dtp %>% 
   ggplot(aes(y = Total, x = Date)) +
-  geom_line() +
-  labs(x = "Date (month, year)", y = "Vaccine uptake \n(number of doses)") +
+  geom_line(color = 'blue', size = 0.7) +
+  labs(x = "Date", y = "Vaccine uptake (number of doses \nper 100,000 population)") +
   #geom_smooth(method = "loess", se = FALSE) +
+  geom_hline(yintercept = mean_hline,
+             linetype = "dashed", color = "red", size=0.5) +
   scale_x_date(expand = c(0,0),
                    date_breaks = "6 months",
                    date_labels = "%d %b %Y") +
   scale_y_continuous() +
-  ggtitle("Diphtheria-Tetatus-Pertussis \nvaccination uptake in Brazil, 2013 to 2019") +
+  ggtitle("Diphtheria-Tetatus-Pertussis vaccination uptake per 100,000 population, \nincluding mean over time period, in Brazil, 2013 to 2019") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0)) 
 
@@ -256,36 +315,62 @@ plotly_dtp <- ggplotly(plot_dtp)
 plotly_dtp
 
 ## Time series for DTP vaccine uptake and sentiment without geo filtering ----------------
-plot_time_dtp <- sentiment_time_horiz_allgeo[, c(1,6)] %>% 
-  left_join(df_dtp[,c(1,29)], by = c("created_at_h" = "Date")) %>% 
-  setNames(c('Date', 'Sentiment', 'DTP uptake')) %>% 
+hlines <- data.frame(X = c("DTP uptake per 100,000 population", 
+                           "Twitter vaccine sentiment"),
+                     Z = c(mean(df_dtp$Total), 0))
+hlines$X <- factor(hlines$X)
+
+plot_time_dtp <- sentiment_time_horiz_allgeo[, c(1,6)] %>%
+  mutate(year_month = format(created_at_h, "%Y-%m")) %>% 
+  left_join(df_dtp[,c(31,29)]) %>%
+  select(-year_month) %>% 
+  setNames(c('Date', 'Twitter vaccine sentiment', 'DTP uptake per 100,000 population')) %>% 
   gather(key = "Indicator",
          value = "value",
          -Date) %>% 
-  ggplot(aes(x = as.Date(Date), y = value)) +
+  ggplot(aes(x = as.Date(Date), y = value,
+             color = Indicator)) +
+  scale_color_manual(values = c("blue", "orange")) +
   geom_line() +
   scale_x_date(expand = c(0,0),
-               date_breaks = "6 months",
+               date_breaks = "3 months",
                date_labels = "%b %Y") +
   scale_y_continuous() +
-  ggtitle("Diphtheria-Tetatus-Pertussis vaccination uptake and 
-          Twitter vaccine sentiment in Brazil, 2013 to 2019") +
+  ggtitle("Diphtheria-Tetatus-Pertussis (DTP) vaccine uptake per 100,000 population \nand 7-day moving average of Twitter vaccine sentiment index \nin Brazil, January 2013 to December 2019 (n = 2,197,090)") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90, 
                                    vjust = 0, 
                                    hjust = 0),
         axis.text = element_text(size = 18),
-        title = element_text(size = 20),
+        title = element_text(size = 18),
         strip.text = element_text(size = 18),
-        axis.title = element_blank()) +
+        axis.title = element_blank(),
+        legend.position = 'none') +
   facet_wrap(~Indicator,
-           ncol = 1, scales = "free_y")
+           ncol = 1, scales = "free_y") #+
+  #geom_hline(data = hlines, aes(yintercept = Z))
   
-  
+
 plot_time_dtp
 
+
 ggsave('outputs/twitter_sentiment_dtp_br.png', plot_time_dtp,
+       width = 12, height = 6)
+  
+
+plotly_time_dtp_ <- ggplotly(plot_time_dtp)
+
+plotly_time_dtp_
+
+ggsave('outputs/twitter_sentiment_dtp_br_plotly.png', plotly_time_dtp_,
        width = 10, height = 6)
+
+plotly::save_image(plotly_time_dtp_,
+               "outputs/twitter_sentiment_dtp_br_plotly.png")
+
+htmlwidgets::saveWidget(widget = plotly_time_dtp_,
+                        file = "outputs/twitter_sentiment_dtp_br_plotly.html",
+                        selfcontained = TRUE)
 
 plotly_time_dtp <- subplot(plotly_dtp, plotly_time, nrows = 2,
                             heights = c(0.3, 0.7), shareX = TRUE,
@@ -302,18 +387,10 @@ plotly_time_dtp <- subplot(plotly_dtp, plotly_time, nrows = 2,
 plotly_time_dtp
 
 # 9 - Data analysis by Brazilian states -----------------
-## Import Brazil states boundary boxes -------------
-br <- read_csv('data/brazil_states_boxes.csv')
-# Last four states correspond to Brazilian islands
-
-br_states <- data.frame(LocationName = c(unique(br$LocationName)),
-                        StatesCode = c('AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 
-                                            'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO',
-                                            'RR', 'SC', 'SP', 'SE', 'TO', 'UNK'))
-br <- right_join(br, br_states, by = 'LocationName')
-
 ## Assign LocationCode to tweets---------------
 ## Interim solution since for loop is not giving expected results
+df_clean_geo_raw <- df_clean_geo
+
 df_clean_geo <- df_clean_geo %>% 
   mutate(LocationCode = case_when(latitude >= br$Latitude_ymin[1] &
                                     latitude <= br$Latitude_ymax[1] &
@@ -471,7 +548,7 @@ df_clean_geo <- df_clean_geo %>%
                                     longitude <= br$Longitude_xmax[31] ~
                                     br$LocationCode[31],
                                   TRUE ~ "NA"))
-df_clean_geo_raw <- df_clean_geo
+
 
 df_clean_geo <- br %>% 
   select(LocationCode, LocationName, StatesCode) %>% 
@@ -497,7 +574,7 @@ case_when_br(df_clean_geo, br, 20)
 unique(df_clean_geo$LocationCode)
 
 # Save data as csv
-write_csv(df_clean_geo, 'data/big_files/tweets_with_predicted_labels_filtered_BR_PT_geo_final.csv')
+write_csv(df_clean_geo, 'data/local/tweets_with_predicted_labels_filtered_BR_PT_geo_final.csv')
 
 ## Group data per Brazilian state -----------------------
 df_clean_geo_state <- df_clean_geo %>%
@@ -505,20 +582,17 @@ df_clean_geo_state <- df_clean_geo %>%
   mutate(year = year(created_at),
          month = month(created_at),
          week = week(created_at)) %>% 
-  group_by(date=floor_date(created_at, "1 day"), StatesCode, label) %>%
+  group_by(date=floor_date(created_at, "1 day"), LocationCode, label) %>%
   tally() %>% 
   spread(label, n) %>%
   #select(date, LocationCode, positive, neutral, negative) %>% 
   replace_na(list(positive = 0, neutral = 0, negative = 0)) %>%
+  arrange(LocationCode) %>% 
   mutate(sentiment_raw = ((1 * positive) + (0 * neutral) + (-1 * negative))/ (positive + neutral + negative),
          year = year(date))  %>% 
-  rename(StatesCode = StatesCode)
-
-# Add rolling average sentiment
-df_clean_geo_state$sentiment <- runmean(df_clean_geo_state$sentiment_raw, k = 20, alg = 'exact', endrule = 'keep')  
-
-# Add names of Brasilian states
-df_clean_geo_state <- full_join(df_clean_geo_state, br[,c(4, 12)], by = 'StatesCode')
+  group_by(LocationCode) %>% 
+  mutate(sentiment = runmean(sentiment_raw, k = 7, alg = 'exact', endrule = 'keep')) %>% 
+  full_join(br[,c(2, 12)], by = 'LocationCode')
 
 ## Separate Brazilian state data per year
 df_clean_geo_state_year <- df_clean_geo_state %>% 
@@ -574,8 +648,8 @@ plotly_states
 
 ### Group data for all years per state ----------
 df_clean_geo_state_year_all <- df_clean_geo_state_year %>% 
-  select(StatesCode, negative, neutral, positive) %>% 
-  group_by(StatesCode) %>% 
+  select(LocationCode, negative, neutral, positive) %>% 
+  group_by(LocationCode) %>% 
   summarise(Negative = sum(negative),
             Neutral = sum(neutral),
             Positive = sum(positive)) %>% 
@@ -587,8 +661,8 @@ write.csv(df_clean_geo_state_year_all, 'data/tweets_with_predicted_labels_state_
 
 ### Group data by year and location and save csv ----------------
 df_clean_geo_state_by_year <- df_clean_geo_state_year %>% 
-  select(StatesCode, negative, neutral, positive) %>% 
-  group_by(StatesCode, year) %>% 
+  select(LocationCode, negative, neutral, positive) %>% 
+  group_by(LocationCode, year) %>% 
   summarise(negative = sum(negative),
             neutral = sum(neutral),
             positive = sum(positive)) %>% 
@@ -632,20 +706,21 @@ write.csv(df_clean_geo_state_year_2013, 'data/tweets_with_predicted_labels_state
 #devtools::install_github("ropensci/rnaturalearthhires")
 world <- ne_states(returnclass = "sf")
 
-world_br <- world %>% 
+### All years -------------------
+world_br_all <- world %>% 
   filter(sov_a3 == "BRA") %>% 
-  arrange(iso_3166_2)
+  arrange(iso_3166_2) %>% 
+  left_join(df_clean_geo_state_year_all,
+            by = c("postal" = "LocationCode"))
 
-world_br$sentiment <- df_clean_geo_state_year_all_RN$sentiment
 
-
-map <- world_br %>% 
+map_all <- world_br_all %>% 
   mutate(sentiment_cat = case_when(sentiment < -0.09104 ~ "< -0.09",
                                    sentiment > -0.09104 & sentiment < -0.05684 ~ "-0.09 to -0.06",
                                    sentiment > -0.05684 & sentiment < -0.04495 ~ "-0.06 to -0.04",
-                                   TRUE ~ "> -0.04")) %>% 
-ggplot() +
-  geom_sf(aes(fill = world_br$sentiment)) +
+                                   TRUE ~ "> -0.04")) %>%
+  ggplot() +
+  geom_sf(aes(fill = world_br_all$sentiment)) +
   scale_fill_viridis_c(option = "B",
                        name = "Twitter vaccine \nsentiment index") +
   #scale_fill_gradient2(midpoint = 0) +
@@ -660,12 +735,189 @@ ggplot() +
   theme(legend.position = c(1, 0.4),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10),
-        title = element_text(size = 14))
+        title = element_text(size = 14),
+        plot.background = element_rect(fill = "white",
+                                        colour = "white"))
 
 
-map
+map_all
+
+ggsave("outputs/map_sentiment_2013_2019.png", map_all)
 
 # https://mran.microsoft.com/snapshot/2020-01-29/web/packages/geobr/vignettes/intro_to_geobr.html
+
+### Each year -------------------
+for (i in 2013:2019) {
+  df_clean_geo_state_plot <- df_clean_geo_state_by_year %>% 
+    select(StatesCode, year, negative, neutral, positive, sentiment, tweets) %>% 
+    filter(year == i)
+  data_plot <- world %>% 
+    filter(sov_a3 == "BRA") %>% 
+    arrange(iso_3166_2) %>% 
+    left_join(df_clean_geo_state_plot,
+              by = c("postal" = "StatesCode"))
+  
+  map <- data_plot %>% 
+    mutate(sentiment_cat = case_when(sentiment < -0.09104 ~ "< -0.09",
+                                     sentiment > -0.09104 & sentiment < -0.05684 ~ "-0.09 to -0.06",
+                                     sentiment > -0.05684 & sentiment < -0.04495 ~ "-0.06 to -0.04",
+                                     TRUE ~ "> -0.04")) %>%
+    ggplot() +
+    geom_sf(aes(fill = data_plot$sentiment)) +
+    scale_fill_viridis_c(option = "B",
+                         name = "Twitter vaccine \nsentiment index") +
+    # scale_fill_gradient(limits = c(0, -0.35),
+    #                     #breaks = c(-0.09104, 0.05684, 0.04495)
+    #                     breaks = c(0.04495, 0.05684, -0.09104)) +
+    #scale_fill_gradient2(midpoint = 0) +
+    annotation_scale(location = "br", width_hint = 0.3) +
+    annotation_north_arrow(location = "br", which_north = "true", 
+                           pad_x = unit(0.75, "in"), pad_y = unit(0.5, "in"),
+                           style = north_arrow_fancy_orienteering) +
+    # coord_sf(xlim = c(-72.9872354804, -33.7683777809), 
+    #          ylim = c(-34.7299934555, 5.24448639569 )) +
+    labs(title = paste('Twitter vaccine sentiment index per \nBrazilian state, January ', 
+                       i, ' to \nDecember ', i, ' (n = ', 
+                       format(sum(df_clean_geo_state_plot$tweets), big.mark = ','),
+                       ')', sep = "")) +
+    theme_void() +
+    theme(legend.position = c(1, 0.4),
+          legend.title = element_text(size = 12),
+          legend.text = element_text(size = 10),
+          title = element_text(size = 14),
+          plot.background = element_rect(fill = "white",
+                                         colour = "white"))
+  assign(x = paste("map", i, sep = "_"),
+         value = map)
+  print(map)
+  ggsave(filename = paste("outputs/map_", i, ".png",
+                          sep = ""))
+  
+}
+
+### All years in facet ----------
+world_br_all_facet <- world %>% 
+  filter(sov_a3 == "BRA") %>% 
+  arrange(iso_3166_2) %>% 
+  left_join(df_clean_geo_state_by_year,
+            by = c("postal" = "StatesCode")) %>% 
+  filter(!is.na(year)) 
+
+##############################
+df_short <- world_br_all_facet %>% 
+  select(postal, sentiment)
+
+
+#################
+
+
+labels_plot <- NULL
+for (i in 2013:2019) {
+  
+  df_loop <- df_clean_geo_state_by_year %>% 
+    filter(year == i)
+  
+  new_label <- c(paste0("January-December ", i, " ", "(n=", 
+                       format(sum(df_loop$tweets),
+                              big.mark = ","),
+                       ")", sep = ""))
+  labels_plot <- c(labels_plot, new_label)
+}
+
+labels_plot_test <- c(paste(unique(world_br_all_facet$year), "test"))
+
+map_all_facet <- world_br_all_facet %>% 
+  # mutate(sentiment_cat = case_when(sentiment < -0.09104 ~ "< -0.09",
+  #                                  sentiment > -0.09104 & sentiment < -0.05684 ~ "-0.09 to -0.06",
+  #                                  sentiment > -0.05684 & sentiment < -0.04495 ~ "-0.06 to -0.04",
+  #                                  TRUE ~ "> -0.04")) %>%
+  mutate(year_label = case_when(year == 2013 ~ paste0("Jan-Dec ", 2013, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2013$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2014 ~ paste0("Jan-Dec ", 2014, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2014$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2015 ~ paste0("Jan-Dec ", 2015, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2015$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2016 ~ paste0("Jan-Dec ", 2016, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2016$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2017 ~ paste0("Jan-Dec ", 2017, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2017$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2018 ~ paste0("Jan-Dec ", 2018, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2018$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2019 ~ paste0("Jan-Dec ", 2019, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2019$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                TRUE ~ "test")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = sentiment)) +
+  scale_fill_viridis_c(option = "B",
+                       name = "Twitter vaccine \nsentiment index") +
+  #scale_fill_gradient2(midpoint = 0) +
+  #annotation_scale(location = "br", width_hint = 0.3) +
+  # annotation_north_arrow(location = "br", which_north = "true", 
+  #                        pad_x = unit(0.75, "in"), pad_y = unit(0.5, "in"),
+  #                        style = north_arrow_fancy_orienteering) +
+  # coord_sf(xlim = c(-72.9872354804, -33.7683777809), 
+  #          ylim = c(-34.7299934555, 5.24448639569 )) +
+  labs(title = 'Twitter vaccine sentiment index per Brazilian state and year (n = 1,750,294)') +
+  theme_void() +
+  theme(legend.position = c(0.85, 0.3),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        title = element_text(size = 14),
+        strip.text = element_text(size=14),
+        plot.background = element_rect(fill = "white",
+                                       colour = "white"),
+        panel.border = element_rect(color="black", fill=NA)) +
+  facet_wrap(~year_label,
+             nrow = 2, scale = "fixed")
+
+
+map_all_facet
+
+ggplotly(map_all_facet)
+
+ggsave("outputs/map_sentiment_2013_2019_facet.png", 
+       map_all_facet, width = 10, height = 5)
+
+# Worldbank data ------------------------------
+world_br <- read_csv("data/worldbank_br.csv") %>% 
+  select(-"Country Name", -"Country Code", -"Series Code") %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  row_to_names(row_number = 1) %>% 
+  janitor::clean_names() %>% 
+  rownames_to_column("year") %>% 
+  separate(col = year, into = c("year", "year_code"), sep = " ") %>% 
+  select(-year_code, -na, -na_2, -na_3, -na_4, -na_5) %>% 
+  mutate_all(as.numeric) %>% 
+  filter(year >= 2013 & year <= 2019)
+
+plot_missing(world_br, title = "Missing values",
+             group = list("Remove" = 1, "Bad" = 0.8, "Good" = 0),
+             missing_only = TRUE, ggtheme = theme_classic())
+
+
+world_br_clean <- world_br %>% 
+  mutate(month = 1) %>%
+  complete(year, month = 1:12) %>%
+  fill(names(world_br)) %>% 
+  select_if(~ !any(is.na(.)))# %>% 
+  select()
+  
+write.csv(world_br_clean, "data/worldbank_br_clean.csv")
 
 # CODE UNDER REVIEW, NOT FINAL ------------------
 

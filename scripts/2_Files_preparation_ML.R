@@ -18,6 +18,9 @@ p_load(tidyverse, readr, lubridate)
 # 2 - Import data --------------------
 df_clean_geo <- read_csv('data/big_files/tweets_with_predicted_labels_filtered_BR_PT_geo_final.csv')
 
+world_br_ml <- read_csv("data/worldbank_br_clean.csv") %>% 
+  select(-...1) 
+
 # 3 - Group tweets per month and calculate variables --------------
 names(df_clean_geo)
 
@@ -48,24 +51,38 @@ df_clean_geo_ml_variables <- df_clean_geo_month %>%
                    num_replies_mean = mean(num_replies)) %>% 
   ungroup()
 
-df_clean_geo_ml_sentiment <- df_clean_geo_month %>% 
+df_clean_geo_ml_region <- df_clean_geo_month %>% 
+  group_by(year_month, label, LocationCode) %>% 
+  tally() %>% 
+  ungroup() %>% 
+  spread(key = label, value = n) %>% 
+  replace(is.na(.), 0) %>% 
+  mutate(sentiment = (((positive * 1)+ (negative * -1))/(positive+negative+neutral))
+         ,total = positive + negative + neutral
+         ) %>% 
+  select(-positive, -negative, -neutral) %>% 
+  tidyr::pivot_wider(names_from = LocationCode, 
+                     values_from = c(sentiment, total),
+                     values_fill = 0)
+
+df_clean_geo_ml <- df_clean_geo_month %>% 
   group_by(year_month, label) %>% 
   tally() %>% 
   ungroup() %>% 
   spread(key = label, value = n) %>% 
-  mutate(sentiment_month = (((positive * 1)+ (negative * -1))/(positive+negative+neutral)))
-
-df_clean_geo_ml_location <- df_clean_geo_month %>% 
-  group_by(year_month, LocationCode) %>% 
-  tally() %>% 
-  ungroup() %>% 
-  spread(key = LocationCode, value = n)
-
-df_clean_geo_ml <- df_clean_geo_ml_sentiment %>% 
-  left_join(df_clean_geo_ml_location,
+  replace(is.na(.), 0) %>%
+  mutate(sentiment_BR = (((positive * 1)+ (negative * -1))/(positive+negative+neutral)),
+         total_BR = positive + negative + neutral) %>% 
+  select(-positive, -negative, -neutral) %>% 
+  left_join(df_clean_geo_ml_region, 
             by = c('year_month' = 'year_month')) %>% 
-  left_join(df_clean_geo_ml_variables,
-            by = c('year_month' = 'year_month'))
+  mutate(year = year(year_month),
+         month = month(year_month)) %>% 
+  left_join(world_br_ml, by = c('year' = 'year',
+                             'month' = 'month'))
+
+
+
 
 # 4 - Save new dataset ----------------
 write_csv(df_clean_geo_ml, 'data/df_monthly_ml.csv')
