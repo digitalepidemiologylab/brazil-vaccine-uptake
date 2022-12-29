@@ -16,7 +16,7 @@ while (require("pacman") == FALSE) {
 p_load(tidyverse, readr, lubridate)
 
 # 2 - Import data --------------------
-df_clean_geo <- read_csv('data/big_files/tweets_with_predicted_labels_filtered_BR_PT_geo_final.csv')
+df_clean_geo <- read_csv('data/local/tweets_with_predicted_labels_filtered_BR_PT_geo_final.csv')
 
 world_br_ml <- read_csv("data/worldbank_br_clean.csv") %>% 
   select(-...1) 

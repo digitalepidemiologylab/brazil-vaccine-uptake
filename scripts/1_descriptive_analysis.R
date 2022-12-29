@@ -12,7 +12,7 @@ while (require("pacman") == FALSE) {
 }
 
 # load packages
-p_load(tidyverse, readr, lubridate, plotly, slider, zoo, ggpubr, caTools, gtsummary,
+p_load(tidyverse, readr, lubridate, plotly, slider, zoo, ggpubr, caTools, gtsummary, stringr,
        padr, forecast, gridExtra, maps, ggforce, geobr, rnaturalearth, tools, DataExplorer,
        ggmap, sf, rnaturalearth, rnaturalearthdata, ggspatial, readxl, janitor, data.table)
 
@@ -113,8 +113,7 @@ br_states <- data.frame(LocationName = c(unique(br$LocationName)),
                                        'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO',
                                        'RR', 'SC', 'SP', 'SE', 'TO', 'UNK'))
 br <- right_join(br, br_states, by = 'LocationName') %>% 
-  filter(LocationName != "Name Unknown")
-
+  filter(LocationName != "Name Unknown") 
 
 ## Import population data
 temp = tempfile(fileext = ".xls")
@@ -709,9 +708,12 @@ world <- ne_states(returnclass = "sf")
 ### All years -------------------
 world_br_all <- world %>% 
   filter(sov_a3 == "BRA") %>% 
-  arrange(iso_3166_2) %>% 
+  arrange(iso_3166_2)  %>% 
+  mutate(name_pt_case = str_to_title(name_pt)) %>% 
+  left_join(br,
+            by = c("name_pt_case" = "LocationNameFull")) %>% 
   left_join(df_clean_geo_state_year_all,
-            by = c("postal" = "LocationCode"))
+            by = c("LocationCode" = "LocationCode"))
 
 
 map_all <- world_br_all %>% 
@@ -748,14 +750,17 @@ ggsave("outputs/map_sentiment_2013_2019.png", map_all)
 
 ### Each year -------------------
 for (i in 2013:2019) {
-  df_clean_geo_state_plot <- df_clean_geo_state_by_year %>% 
-    select(StatesCode, year, negative, neutral, positive, sentiment, tweets) %>% 
+  df_clean_geo_state_plot <- br %>% 
+    select(LocationNameFull, LocationCode) %>% 
+    right_join(df_clean_geo_state_by_year) %>% 
+    select(LocationCode, LocationNameFull, year, negative, neutral, positive, sentiment, tweets) %>% 
     filter(year == i)
   data_plot <- world %>% 
     filter(sov_a3 == "BRA") %>% 
     arrange(iso_3166_2) %>% 
+    mutate(name_pt_case = str_to_title(name_pt)) %>% 
     left_join(df_clean_geo_state_plot,
-              by = c("postal" = "StatesCode"))
+              by = c("name_pt_case" = "LocationNameFull"))
   
   map <- data_plot %>% 
     mutate(sentiment_cat = case_when(sentiment < -0.09104 ~ "< -0.09",
@@ -789,6 +794,7 @@ for (i in 2013:2019) {
                                          colour = "white"))
   assign(x = paste("map", i, sep = "_"),
          value = map)
+  print(paste0("Printing map for year ", i))
   print(map)
   ggsave(filename = paste("outputs/map_", i, ".png",
                           sep = ""))
@@ -799,19 +805,20 @@ for (i in 2013:2019) {
 world_br_all_facet <- world %>% 
   filter(sov_a3 == "BRA") %>% 
   arrange(iso_3166_2) %>% 
+  mutate(name_pt_case = str_to_title(name_pt)) %>%
+  left_join(br[, c(2,5)],
+            by = c("name_pt_case" = "LocationNameFull")) %>% 
   left_join(df_clean_geo_state_by_year,
-            by = c("postal" = "StatesCode")) %>% 
+            by = c("LocationCode" = "LocationCode")) %>% 
   filter(!is.na(year)) 
 
-##############################
+
 df_short <- world_br_all_facet %>% 
-  select(postal, sentiment)
-
-
-#################
+  select(LocationCode, sentiment)
 
 
 labels_plot <- NULL
+
 for (i in 2013:2019) {
   
   df_loop <- df_clean_geo_state_by_year %>% 
@@ -892,9 +899,9 @@ ggplotly(map_all_facet)
 ggsave("outputs/map_sentiment_2013_2019_facet.png", 
        map_all_facet, width = 10, height = 5)
 
-# Worldbank data ------------------------------
+# World Bank data ------------------------------
 world_br <- read_csv("data/worldbank_br.csv") %>% 
-  select(-"Country Name", -"Country Code", -"Series Code") %>% 
+  select(-"Country Name", -"Country Code", -"Series Code") %>%
   t() %>% 
   as.data.frame() %>% 
   row_to_names(row_number = 1) %>% 
@@ -915,38 +922,5 @@ world_br_clean <- world_br %>%
   complete(year, month = 1:12) %>%
   fill(names(world_br)) %>% 
   select_if(~ !any(is.na(.)))# %>% 
-  select()
   
 write.csv(world_br_clean, "data/worldbank_br_clean.csv")
-
-# CODE UNDER REVIEW, NOT FINAL ------------------
-
-# Map in R ---------------------
-mymap <- maps::map("world", fill=TRUE, col="white", bg="white", ylim=c(-60, 90), mar=c(0,0,0,0))
-points(df_clean_2019$Long, df_clean_2019$Lat, col = "red", cex = 0.2)
-
-
-## Using brazilmaps------------------
-states <- get_brmap(geo = c('State'),
-                    #geo.filter = list(State != 0),
-                    class = 'sf')
-plot_brmap(states)
-View(states)
-
-# Sentiment score per geoname id -----------------
-sentiment_geo <- df_clean %>%
-  group_by(geoname_id, label) %>%
-  tally() %>%
-  spread(label, n) %>%
-  select(geoname_id, positive, neutral, negative) %>%
-  replace_na(list(positive = 0, neutral = 0, negative = 0)) %>%
-  mutate(sentiment = ((1 * positive) + (0 * neutral) + (-1 * negative))/ (positive + neutral + negative),
-         sentiment2 = ((1 * positive) + (-1 * negative))/ (positive + negative),
-         sent_average = (1 * positive) + (0 * neutral) + (-1 * negative))
-
-# Check new variable
-hist(sentiment_geo$sentiment)
-summary(sentiment_geo$sentiment)
-hist(sentiment_geo$sentiment2)
-summary(sentiment_geo$sentiment2)
-
