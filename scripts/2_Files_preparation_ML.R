@@ -105,7 +105,9 @@ df_clean_geo_ml <- df_clean_geo_month %>%
          -total_debt_service_percent_of_exports_of_goods_services_and_primary_income,
          -net_migration, -personal_remittances_received_current_us,
          -foreign_direct_investment_net_inflows_bo_p_current_us, 
-         -net_official_development_assistance_and_official_aid_received_current_us)
+         -net_official_development_assistance_and_official_aid_received_current_us) %>% 
+  left_join(df_clean_geo_ml_variables,
+            by = "year_month")
 
 df_clean_geo_ml_short <- df_clean_geo_ml %>% 
   select(-starts_with("total_BRG"))
