@@ -1,0 +1,431 @@
+---
+title: An R Markdown document converted from "scripts/ml_jupyter_regression.ipynb"
+output: html_document
+---
+
+# 1. Data cleaning, preparation and exploration
+
+## 1.1. Packages
+
+```{python}
+import pandas as pd
+import numpy as np
+import datetime
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import seaborn as sns
+
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_regression
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neighbors import NearestNeighbors
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+
+# Avoid scientific notation in float values
+pd.options.display.float_format = '{:.2f}'.format
+
+# Ignore warnings
+import warnings
+warnings.simplefilter(action = "ignore")
+
+# Show all rows and columns in the outputs
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+
+# Switch off the warning about setting with copy
+pd.set_option('mode.chained_assignment', None)
+
+# Increase width of column
+pd.set_option('display.max_colwidth', None)
+```
+
+## 1.2. Import datasets
+
+### a) Twitter variables and sentiment analysis
+
+```{python}
+df_twitter = pd.read_csv("../data/df_monthly_ml.csv", parse_dates = [0])
+df_twitter[['Date']] = df_twitter[['year_month']]
+df_twitter = df_twitter.drop(['year_month'], axis = 1)
+df_twitter.head()
+```
+
+```{python}
+df_twitter.info(verbose = True)
+```
+
+```{python}
+# Heatmap with correlation coefficients between all variables
+corr_matrix = df_twitter.corr().round(1)
+plt.rcParams.update({'font.size': 10})
+plt.rcParams['figure.figsize']= 20,25
+sns.heatmap(corr_matrix, annot = True)
+plt.xticks(rotation = 90)
+plt.show()
+```
+
+```{python}
+# Line chart of each numerical variable
+columns_numeric = df_twitter.select_dtypes(include = [np.number]).columns
+plt.rcParams["figure.figsize"]=10,5
+for col in columns_numeric:
+    plt.plot(df_twitter['Date'], df_twitter[col])
+    plt.xlabel('Year, month and day')
+    plt.xticks(rotation = 45)
+    plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval = 60))
+    plt.ylabel(col)
+    plt.show()
+```
+
+### b) Vaccine uptake
+
+```{python}
+df_dtp = pd.read_csv("../data/uptake_br_dtp_2013_2019_clean.csv",
+                    parse_dates = [0])
+df_dtp.head()
+```
+
+```{python}
+df_dtp.info(verbose = True)
+```
+
+```{python}
+df_dtp_total = df_dtp[['Date', 'Total']]
+df_dtp_total.head()
+```
+
+```{python}
+df_dtp_total.describe()
+```
+
+# 2. Data split for ML
+
+```{python}
+df = df_twitter.join(df_dtp[['Total']]).replace(np.nan, 0)
+df.head()
+```
+
+```{python}
+df.info()
+```
+
+```{python}
+# Get indexes for CV
+splits = 7
+train_prop = 6
+valid_prop = 4
+test_prop = 2
+
+cv = [([0,1,2,3,4,5],[6,7,8,9]), #10,11
+     ([12,13,14,15,16,17],[18,19,20,21]), #22,23
+     ([24,25,26,26,27,28],[29,30,31,32]), #33,34,35
+     ([36,37,38,39,40,41],[42,43,44,45]), #46,47
+     ([48,49,50,51,52,53],[54,55,56,57]), #58,59
+     ([60,61,62,63,64,65],[66,67,68,69]), #70,71
+     ([72,73,74,75,76,77],[78,79,80,81]) #82,83
+     ]
+
+cv
+```
+
+```{python}
+df['Date']
+```
+
+```{python}
+# Split data
+## Get indexes according to previous cv
+train_valid_index = [0,1,2,3,4,5,6,7,8,9,12,13,14,15,16,17,
+                     18,19,20,21,24,25,26,26,27,29,30,31,32,
+                     33,36,37,38,39,40,41,42,43,44,45,48,49,
+                     50,51,52,53,54,55,56,57,60,61,62,63,64,
+                     65,66,67,68,69,72,73,74,75,76,77,78,79,
+                     80,81]
+test_index = [10,11,22,23,34,35,46,47,58,59,70,71,82,83]
+
+## Split dataset
+df_train_valid = df.drop(['Date'], axis = 1).loc[train_valid_index]
+df_test = df.drop(['Date'], axis = 1).loc[test_index]
+
+## Get X and y
+X_train_valid = df_train_valid.drop(['Total'], axis = 1)
+y_train_valid = df_train_valid['Total']
+X_test = df_test.drop(['Total'], axis = 1)
+y_test = df_test['Total']
+
+## Print shape of datasets
+print('Shape of training-valid X: ', X_train_valid.shape)
+print('Shape of test X: ', X_test.shape)
+print("")
+print('Shape of training-valid Y: ', y_train_valid.shape)      
+print('Shape of test Y: ', y_test.shape)
+```
+
+```{python}
+# Export datasets for ML
+X_train_valid.to_csv('../data/x_train_valid.csv', index = False)
+X_test.to_csv('../data/x_test.csv', index = False)
+
+y_train_valid.to_csv('../data/y_train_valid.csv', index = False)
+y_test.to_csv('../data/y_test.csv', index = False)
+```
+
+# 3. Machine learning
+
+## 3.1. Ridge
+
+```{python}
+# Fit/test N models
+gs_results = []
+for i in range(6):
+    X_tr = df.drop(['Date'], axis = 1).loc[cv[i][0]]
+    X_vl = df.drop(['Date'], axis = 1).loc[cv[i][1]]
+    y_tr = df['Total'].loc[cv[i][0]]
+    y_vl = df['Total'].loc[cv[i][1]]
+    
+    # Standardize features
+    scaler = StandardScaler()
+    X_tr_rescaled = scaler.fit_transform(X_tr)
+    X_vl_rescaled = scaler.transform(X_vl)
+
+    # Grid search
+    for alpha in np.logspace(1, 4, num=20):
+        # Create and fit ridge regression
+        ridge = Ridge(alpha=alpha)
+        ridge.fit(X_tr_rescaled, y_tr)
+
+        # Save model and its performance on train/test sets
+        gs_results.append({
+            'alpha': alpha,
+            'run_idx': i,
+            'train_mse': mean_squared_error(y_tr, ridge.predict(X_tr_rescaled)),
+            #'train_mae': mean_absolute_error(10**y_tr, 10**ridge.predict(X_tr_rescaled)),
+            'test_mse': mean_squared_error(y_vl, ridge.predict(X_vl_rescaled)),
+            #'test_mae': mean_absolute_error(10**y_vl, 10**ridge.predict(X_vl_rescaled)),    
+    
+    })
+        
+# Convert results to DataFrame
+gs_results = pd.DataFrame(gs_results)
+gs_results.head()
+
+# Group results by alpha value
+gb_alpha = gs_results.groupby('alpha')
+
+# Compute train/test mean scores with std
+mean_tr = gb_alpha.train_mse.mean()
+mean_te = gb_alpha.test_mse.mean()
+std_tr = gb_alpha.train_mse.std()
+std_te = gb_alpha.test_mse.std()
+alphas = mean_tr.index.values
+
+# Plot mean scores
+plt.plot(np.log10(alphas), mean_tr, label='train')
+plt.plot(np.log10(alphas), mean_te, label='test')
+
+# Quantify variance with ±std curves
+plt.fill_between(np.log10(alphas), mean_tr-std_tr, mean_tr+std_tr, alpha=0.2)
+plt.fill_between(np.log10(alphas), mean_te-std_te, mean_te+std_te, alpha=0.2)
+
+# Add marker for best score
+best_alpha = mean_te.idxmin()
+plt.scatter(np.log10(best_alpha), mean_te.min(), marker='x', c='red', zorder=10)
+
+# Print best MSE/MAE scores
+best_result = gb_alpha.get_group(best_alpha)
+plt.title('Best alpha: {:.0f} - Mean MSE (training): {:.4f} - Mean MSE (validation): {:.4f} '.format(
+    best_alpha, best_result.train_mse.mean(), best_result.test_mse.mean()))
+
+plt.xlabel('$log_{10}(alpha)$')
+plt.ylabel('MSE')
+plt.legend()
+plt.show()
+```
+
+```{python}
+best_result.head()
+```
+
+```{python}
+# Fit the model with best alpha
+def fit_model_best_n(X_train, y_train, X_test):
+    # Create the model
+    # Note: Using ridge with a small alpha to avoid ill-conditioning issues
+    model = Ridge(alpha=best_result.alpha.iloc[0]) 
+    
+    # Fit it to train data
+    model.fit(X_train, y_train)
+    
+    # Compute predictions for test set
+    y_pred = np.maximum(
+        model.predict(X_test),
+        50 # set a lower limit
+    )
+    
+    return y_pred
+```
+
+```{python}
+y_pred_all_best = fit_model_best_n(X_train_valid, y_train_valid, X_test)
+mse_best = mean_squared_error(y_test, y_pred_all_best)
+
+print('MSE: {:.2f}'.format(mse_best))
+```
+
+## 3.2. K-nearest neighbours
+
+```{python}
+# Fit/test N models
+gs_results = []
+for i in range(6):
+    X_tr = df.drop(['Date'], axis = 1).loc[cv[i][0]]
+    X_vl = df.drop(['Date'], axis = 1).loc[cv[i][1]]
+    y_tr = df['Total'].loc[cv[i][0]]
+    y_vl = df['Total'].loc[cv[i][1]]
+    
+    # Standardize features
+    scaler = StandardScaler()
+    X_tr_rescaled = scaler.fit_transform(X_tr)
+    X_vl_rescaled = scaler.transform(X_vl)
+
+    # Grid search
+    for n in list(range(1,6)):
+        for l in list(range(1,30)):
+            for p in list(range(1,2)):
+                knn = KNeighborsRegressor(n_neighbors = n,
+                                          leaf_size = l,
+                                          p = p)
+                knn.fit(X_tr_rescaled, y_tr)
+
+                # Save model and its performance on train/test sets
+                gs_results.append({
+                    'neighbors': n,
+                    'leaf_size': l,
+                    'p': p,
+                    'run_idx': i,
+                    'train_mse': mean_squared_error(y_tr, knn.predict(X_tr_rescaled)),
+                    #'train_mae': mean_absolute_error(10**y_tr, 10**ridge.predict(X_tr_rescaled)),
+                    'test_mse': mean_squared_error(y_vl, knn.predict(X_vl_rescaled)),
+                    #'test_mae': mean_absolute_error(10**y_vl, 10**ridge.predict(X_vl_rescaled)),    
+    
+    })
+        
+# Convert results to DataFrame
+gs_results = pd.DataFrame(gs_results)
+print(gs_results.info())
+
+# Group results by n value
+gb_n = gs_results.groupby('neighbors')
+print(gb_n.head())
+
+# Compute train/test mean scores with std
+mean_tr = gb_n.train_mse.mean()
+mean_te = gb_n.test_mse.mean()
+std_tr = gb_n.train_mse.std()
+std_te = gb_n.test_mse.std()
+ns = mean_tr.index.values
+
+# Plot mean scores
+plt.plot(ns, mean_tr, label='training')
+plt.plot(ns, mean_te, label='validation')
+
+# Quantify variance with ±std curves
+plt.fill_between(ns, mean_tr-std_tr, mean_tr+std_tr, alpha=0.2)
+plt.fill_between(ns, mean_te-std_te, mean_te+std_te, alpha=0.2)
+
+# Add marker for best score
+best_n = mean_te.idxmin()
+plt.scatter(best_n, mean_te.min(), marker='x', c='red', zorder=10, label = "best n neighbours")
+
+# Print best MSE/MAE scores
+best_result = gb_n.get_group(n)
+plt.title('Best n neighbour: {:.0f} - Mean MSE (training): {:.2f} - Mean MSE (validation): {:.2f}'.format(
+    best_n, best_result.train_mse.mean(), best_result.test_mse.mean()))
+
+plt.xlabel('n-neighbours')
+plt.ylabel('Mean Squared Error (MSE)')
+plt.legend()
+plt.show()
+```
+
+```{python}
+best_n
+```
+
+```{python}
+# Fit the model with best alpha
+def fit_model_best_n(X_train, y_train, X_test):
+    # Create the model
+    # Note: Using ridge with a small alpha to avoid ill-conditioning issues
+    model = KNeighborsRegressor(n_neighbors = best_result.neighbors.iloc[0],
+                                leaf_size = best_result.leaf_size.iloc[0],
+                                p = best_result.p.iloc[0]) 
+    
+    # Fit it to train data
+    model.fit(X_train, y_train)
+    
+    # Compute predictions for test set
+    y_pred = np.maximum(
+        model.predict(X_test),
+        50 # set a lower limit
+    )
+    
+    return y_pred
+```
+
+```{python}
+y_pred_all_best = fit_model_best_n(X_train_valid, y_train_valid, X_test)
+mse_best = mean_squared_error(y_test, y_pred_all_best)
+
+print('MSE: {:.2f}'.format(mse_best))
+```
+
+## 3.2. Select best k features
+
+```{python}
+# Reduction of features based on K best features
+X_all = df.drop(['Date'], axis = 1).drop(['Total'], axis = 1)
+y_all = df['Total']
+
+print("\33[1m" + "\33[34m" + 
+     "\nReduction of features based on k best features" +
+     "\33[0m" + "\n")
+select_10 = SelectKBest(f_regression, k = 10)
+select_10.fit(X_all, y_all)
+X_all_10 = select_10.transform(X_all)
+print("Shape after selecting best 10 features:", X_all_10.shape) 
+
+select_18 = SelectKBest(f_regression, k = 18)
+select_18.fit(X_all, y_all)
+X_all_18 = select_18.transform(X_all)
+print("Shape after selecting best 15 features:", X_all_18.shape) 
+
+select_30 = SelectKBest(f_regression, k = 30)
+select_30.fit(X_all, y_all)
+X_all_30 = select_30.transform(X_all)
+print("Shape after selecting best 30 features:", X_all_30.shape) 
+```
+
+```{python}
+# Getting selected features
+features_10 = list(X_all.columns[select_10.get_support(indices = True)])
+print('\33[1m'+'\nBest 10 features: \n' +
+      '\33[0m', features_10)
+
+features_18 = list(X_all.columns[select_18.get_support(indices = True)])
+print('\33[1m'+'\nBest 18 features: \n' +
+      '\33[0m', features_18)
+
+features_30 = list(X_all.columns[select_30.get_support(indices = True)])
+print('\33[1m'+'\nBest 30 features: \n' +
+      '\33[0m', features_30)
+```
+

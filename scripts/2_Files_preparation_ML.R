@@ -2,10 +2,11 @@
 #' Aim: Prepare files for ML
 #' Author: Laura Espinosa
 #' Date created: 27 August 2022
-#' Date updated: 27 August 2022
+#' Date updated: 30 December 2022
 
 
 # 1 - Packages ----------------------
+message("Installing and loading packages")
 # install/load "pacman" to help installing and loading other packages
 while (require("pacman") == FALSE) {
   install.packages("pacman")
@@ -16,12 +17,13 @@ while (require("pacman") == FALSE) {
 p_load(tidyverse, readr, lubridate)
 
 # 2 - Import data --------------------
+message("Importing data")
 df_clean_geo <- read_csv('data/local/tweets_with_predicted_labels_filtered_BR_PT_geo_final.csv')
 
-world_br_ml <- read_csv("data/worldbank_br_clean.csv") %>% 
-  select(-...1) 
+world_bank_clean <- read_csv("data/worldbank_br_clean.csv") 
 
 # 3 - Group tweets per month and calculate variables --------------
+message("Prepare datasets for machine learning model")
 names(df_clean_geo)
 
 df_clean_geo_month <- df_clean_geo
@@ -78,11 +80,38 @@ df_clean_geo_ml <- df_clean_geo_month %>%
             by = c('year_month' = 'year_month')) %>% 
   mutate(year = year(year_month),
          month = month(year_month)) %>% 
-  left_join(world_br_ml, by = c('year' = 'year',
-                             'month' = 'month'))
+  left_join(world_bank_clean, by = c('year' = 'year',
+                             'month' = 'month')) %>% 
+  select(-surface_area_sq_km, -population_total, -gni_atlas_method_current_us,
+         -gni_per_capita_atlas_method_current_us, -gni_ppp_current_international,
+         -immunization_measles_percent_of_children_ages_12_23_months,
+         -prevalence_of_hiv_total_percent_of_population_ages_15_49,
+         -forest_area_sq_km, -energy_use_kg_of_oil_equivalent_per_capita,
+         -co2_emissions_metric_tons_per_capita, -electric_power_consumption_k_wh_per_capita,
+         -gdp_current_us, -inflation_gdp_deflator_annual_percent, 
+         -agriculture_forestry_and_fishing_value_added_percent_of_gdp, 
+         -industry_including_construction_value_added_percent_of_gdp, 
+         -exports_of_goods_and_services_percent_of_gdp, 
+         -imports_of_goods_and_services_percent_of_gdp, 
+         -revenue_excluding_grants_percent_of_gdp, 
+         -time_required_to_start_a_business_days, -tax_revenue_percent_of_gdp,
+         -military_expenditure_percent_of_gdp, 
+         -contraceptive_prevalence_any_method_percent_of_married_women_ages_15_49,
+         -high_technology_exports_percent_of_manufactured_exports, 
+         #-statistical_capacity_score_overall_average_scale_0_100,
+         -merchandise_trade_percent_of_gdp, 
+         -net_barter_terms_of_trade_index_2000_100, 
+         -external_debt_stocks_total_dod_current_us,
+         -total_debt_service_percent_of_exports_of_goods_services_and_primary_income,
+         -net_migration, -personal_remittances_received_current_us,
+         -foreign_direct_investment_net_inflows_bo_p_current_us, 
+         -net_official_development_assistance_and_official_aid_received_current_us)
+
+df_clean_geo_ml_short <- df_clean_geo_ml %>% 
+  select(-starts_with("total_BRG"))
 
 
-
-
-# 4 - Save new dataset ----------------
+# 4 - Save new datasets ----------------
+message("Saving new datasets for machine learning model")
 write_csv(df_clean_geo_ml, 'data/df_monthly_ml.csv')
+write_csv(df_clean_geo_ml_short, 'data/df_monthly_ml_short.csv')
