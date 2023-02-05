@@ -2,7 +2,7 @@
 #' Aim: Prepare files for ML
 #' Author: Laura Espinosa
 #' Date created: 27 August 2022
-#' Date updated: 30 December 2022
+#' Date updated: 05 February 2023
 
 
 # 1 - Packages ----------------------

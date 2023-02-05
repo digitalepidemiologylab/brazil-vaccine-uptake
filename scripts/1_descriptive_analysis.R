@@ -2,7 +2,7 @@
 #' Aim: Descriptive analysis of predicted annotated tweets for Brazil and vaccine uptake data
 #' Author: Laura Espinosa
 #' Date created: 26 July 2021
-#' Date updated: 30 December 2022
+#' Date updated: 05 February 2023
 
 # 1 - Packages ----------------------
 # install/load "pacman" to help installing and loading other packages
@@ -14,10 +14,9 @@ while (require("pacman") == FALSE) {
 }
 
 # load packages
-p_load(tidyverse, readr, lubridate, plotly, slider, zoo, ggpubr, caTools, gtsummary, stringr,
-       padr, forecast, gridExtra, maps, ggforce, geobr, rnaturalearth, tools, DataExplorer,
-       ggmap, sf, rnaturalearth, rnaturalearthdata, ggspatial, readxl, janitor, data.table)
-
+p_load(caTools, data.table, DataExplorer, ggpubr, ggspatial, graphics, 
+       gtsummary, janitor, lubridate, padr, plotly, readr, readxl, 
+       rnaturalearth, stats, tidyverse, tools, utils, zoo)
 
 # 2 - Import cleaned Twitter data ----------------
 message("Importing Twitter data")
@@ -287,7 +286,7 @@ hlines$X <- factor(hlines$X)
 
 plot_time_dtp <- sentiment_time_horiz_allgeo[, c(1,6)] %>%
   mutate(year_month = format(created_at_h, "%Y-%m")) %>% 
-  left_join(df_dtp[,c(30,29)]) %>%
+  left_join(df_dtp[,c(31,29)]) %>%
   select(-year_month) %>% 
   setNames(c('Date', 'Twitter vaccine sentiment', 'DTP monthly uptake per 100,000 population')) %>% 
   gather(key = "Indicator",
