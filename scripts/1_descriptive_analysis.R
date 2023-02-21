@@ -79,7 +79,7 @@ df_dtp$Date <- as.Date(paste0(df_dtp$Date, "/01"), format = "%Y/%b/%d") # correc
 df_dtp <- df_dtp %>% 
   rbind(c("2019-12-31", rep(NA, 41))) %>% # add last date
   pad(interval = "day") %>%  # fill missing dates
-  fill(colnames(df_dtp), .direction = "down") # fill NA with previous values 
+  tidyr::fill(colnames(df_dtp), .direction = "down") # fill NA with previous values 
 
 
 for (i in 2:29) {
@@ -100,6 +100,11 @@ df_dtp <- df_dtp %>%
 
 
 write.csv(df_dtp, "data/uptake_br_dtp_2013_2019_clean.csv", row.names = FALSE)
+
+df_dtp_month <- df_dtp %>% 
+  distinct(year_month, .keep_all = TRUE)
+
+write.csv(df_dtp_month, "data/uptake_br_dtp_2013_2019_clean_month.csv", row.names = FALSE)
 
 ### Import clean dtp data
 df_dtp <- read_csv("data/uptake_br_dtp_2013_2019_clean.csv")

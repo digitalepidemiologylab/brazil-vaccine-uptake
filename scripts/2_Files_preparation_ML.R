@@ -105,7 +105,9 @@ df_clean_geo_ml <- df_clean_geo_month %>%
          -total_debt_service_percent_of_exports_of_goods_services_and_primary_income,
          -net_migration, -personal_remittances_received_current_us,
          -foreign_direct_investment_net_inflows_bo_p_current_us, 
-         -net_official_development_assistance_and_official_aid_received_current_us) %>% 
+         -net_official_development_assistance_and_official_aid_received_current_us)
+
+df_clean_geo_ml_full <- df_clean_geo_ml %>% 
   left_join(df_clean_geo_ml_variables,
             by = "year_month")
 
@@ -113,7 +115,10 @@ df_clean_geo_ml_short <- df_clean_geo_ml %>%
   select(-starts_with("total_BRG"))
 
 
+
+
 # 4 - Save new datasets ----------------
 message("Saving new datasets for machine learning model")
 write_csv(df_clean_geo_ml, 'data/df_monthly_ml.csv')
+write_csv(df_clean_geo_ml_full, 'data/df_monthly_ml_full.csv')
 write_csv(df_clean_geo_ml_short, 'data/df_monthly_ml_short.csv')
