@@ -54,7 +54,7 @@ df_clean_geo_ml_variables <- df_clean_geo_month %>%
   ungroup()
 
 df_clean_geo_ml_region <- df_clean_geo_month %>% 
-  group_by(year_month, label, LocationCode) %>% 
+  group_by(year_month, label, LocationName.x) %>% 
   tally() %>% 
   ungroup() %>% 
   spread(key = label, value = n) %>% 
@@ -63,7 +63,7 @@ df_clean_geo_ml_region <- df_clean_geo_month %>%
          ,total = positive + negative + neutral
          ) %>% 
   select(-positive, -negative, -neutral) %>% 
-  tidyr::pivot_wider(names_from = LocationCode, 
+  tidyr::pivot_wider(names_from = LocationName.x, 
                      values_from = c(sentiment, total),
                      values_fill = 0)
 

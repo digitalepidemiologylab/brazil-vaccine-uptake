@@ -180,6 +180,23 @@ sentiment_time_horiz_allgeo <- sentiment_time_allgeo %>%
 
 sentiment_time_horiz_allgeo$sentiment <- runmean(sentiment_time_horiz_allgeo$sentiment_raw, k = 7, alg = 'exact', endrule = 'keep')
 
+sentiment_time_horiz_allgeo_cat <- sentiment_time_horiz_allgeo %>% 
+  mutate(cat_sent = case_when(sentiment < 0 ~ 'negative',
+                              sentiment > 0 ~ 'positive',
+                              TRUE ~ 'neutral'),
+         year = year(created_at_h),
+         month = month(created_at_h)) %>% 
+  group_by(cat_sent, year, month) %>% 
+  tally() %>% 
+  mutate(n = as.numeric(n)) %>% 
+  arrange(desc(cat_sent)) %>% 
+  adorn_totals()
+
+positive_total <- sentiment_time_horiz_allgeo_cat %>% 
+  filter(cat_sent == 'positive') %>% 
+  summarise(sum(n)) %>% 
+  adorn_totals()
+
 plot_time <- sentiment_time_horiz_allgeo[, c(1,6)] %>% 
   ggplot(aes(x = created_at_h, y = sentiment)) +
   geom_line(colour = "dark green", size = 0.7) +
@@ -554,13 +571,41 @@ df_clean_geo_state$color <- ifelse(df_clean_geo_state$sentiment < 0,
                                           "positive",
                                           "neutral"))
 
-plot_states <- df_clean_geo_state %>% 
+df_clean_geo_all <- sentiment_time_horiz_allgeo %>% 
+  select(created_at_h, negative, neutral, positive, sentiment, 
+         sentiment_raw, cat_sent) %>% 
+  mutate(LocationCode = "BR",
+         year = year(created_at_h),
+         Longitude_xmin = NA) %>% 
+  rename("date" = "created_at_h",
+         "color" = 'cat_sent') %>% 
+  rbind.data.frame(df_clean_geo_state) %>% 
+  left_join(br[,c(2,5)])
+
+df_clean_geo_all$LocationNameFull <- replace_na(df_clean_geo_all$LocationNameFull,
+                                                " Brazil")
+
+df_clean_geo_all <- df_clean_geo %>% 
+  group_by(LocationCode) %>% 
+  tally() %>% 
+  ungroup() %>% 
+  rbind(list(LocationCode = "BR", n = nrow(df_clean))) %>%
+  mutate(n = as.numeric(n)) %>% 
+  rename("Total" = "n") %>% 
+  right_join(df_clean_geo_all, by = "LocationCode") %>% 
+  mutate(Total = case_when(is.na(Total) ~ 0,
+                           TRUE ~ Total),
+         label_plot = paste0(LocationNameFull, " (n =", 
+                             format(Total, big.mark = ",", trim = TRUE), 
+                             " )", sep = ""))
+
+plot_states <- df_clean_geo_all %>% 
   # mutate(sentiment_cat = case_when(sentiment > 0 ~ "Positive",
   #                                  sentiment < 0 ~ "Negative",
   #                                  TRUE ~ "Neutral")) %>% 
-  filter(!is.na(LocationCode)) %>% 
+  filter(!is.na(LocationNameFull)) %>% 
   ggplot(aes(x = date, y = sentiment)) +
-  geom_line(colour = "dark green") +
+  geom_line(colour = "dark green", size = 0.5) +
   # geom_point(aes(x = date, y = sentiment,
   #                colour = sentiment_cat),
   #            size = 1) +
@@ -568,25 +613,51 @@ plot_states <- df_clean_geo_state %>%
   scale_x_datetime(date_breaks = "6 months", 
                    #date_minor_breaks = "1 month", 
                    date_labels = "%b-%Y",
-                   limits = c(min(df_clean_geo_state$date), 
-                              max(df_clean_geo_state$date))) +
+                   limits = c(min(df_clean_geo_all$date), 
+                              max(df_clean_geo_all$date))) +
   geom_hline(yintercept=0,  linetype = "dashed", color = "red", size=0.5) +
   ggtitle('7-day moving average of Twitter vaccine sentiment index in Brazil, January 2013 to December 2019') +
-  labs(x = "Date (day, month and year)", y = "Vaccine sentiment index") +
+  labs(x = "Date (day, month and year)", y = "TVS index") +
   #geom_smooth(method = "loess", se = FALSE) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90),
-        plot.title = element_text(size = 12, hjust = 0.5)) +
-  facet_wrap(vars(LocationCode), scales = "free_y", ncol = 4)
+        plot.title = element_text(size = 12, hjust = 0.5),
+        axis.text = element_text(size = 10)) +
+  facet_wrap(vars(label_plot), scales = "free_y", ncol = 4)
 
 # Show plot
 plot_states
+
+# save plot
+ggsave("outputs/twitter_sentiment_br_states.png", plot_states,
+      width = 12, height = 6)
 
 # Interactive plot (plotly)
 plotly_states <- ggplotly(plot_states) 
 
 # Show interactive plot
 plotly_states
+
+# Positives per state and year
+positive_br_states <- df_clean_geo_all %>% 
+  filter(color == "positive") %>% 
+  select(LocationNameFull, year) %>% 
+  group_by(LocationNameFull, year) %>% 
+  tally() %>% 
+  ungroup() %>% 
+  arrange(year) %>% 
+  pivot_wider(id_cols = LocationNameFull,
+              names_from = year,
+              values_from = n)
+
+n_distinct(positive_br_states %>% filter(!is.na(`2013`)) %>% select(LocationNameFull))
+n_distinct(positive_br_states %>% filter(!is.na(`2014`)) %>% select(LocationNameFull))
+n_distinct(positive_br_states %>% filter(!is.na(`2015`)) %>% select(LocationNameFull))
+n_distinct(positive_br_states %>% filter(!is.na(`2016`)) %>% select(LocationNameFull))
+n_distinct(positive_br_states %>% filter(!is.na(`2017`)) %>% select(LocationNameFull))
+n_distinct(positive_br_states %>% filter(!is.na(`2018`)) %>% select(LocationNameFull))
+n_distinct(positive_br_states %>% filter(!is.na(`2019`)) %>% select(LocationNameFull))
+
 
 # 6 - Maps in R ----------------
 message("Producing maps")
