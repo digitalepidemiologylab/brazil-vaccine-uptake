@@ -1,5 +1,5 @@
 # Script information ------------
-#' Aim: Compare annotations with GPT
+#' Aim: Compare annotations with GPT and mixtral
 #' Author: Laura Espinosa
 #' Date created: 26 July 2021
 #' Date updated: 05 February 2023
@@ -49,7 +49,7 @@ paho_clean %>%
   write.csv("data/local/paho_tweets_filtered.csv")
 
 ## All tweets -------------
-#df <- read_csv("data/local/tweets_filtered_BR_PT.csv")
+df <- read_csv("data/local/tweets_filtered_BR_PT.csv")
 
 ## GPT 4 annotations ------------
 message("Getting GPT 4 annotations")
@@ -175,18 +175,16 @@ for (i in prompts) {
 }
 
 ## EPFL vs selecting majority class ------------  
-df_con_matrix_majority <- df_all_clean %>% 
-  filter(!duplicated(id_tweets)) %>% 
-  select(stance_epfl) %>%
-  mutate(stance_majority = "neutral", 
-         stance_epfl = factor(stance_epfl, ordered = TRUE,
+df_con_matrix_majority <- df_all %>% 
+  select(sentiment_paho) %>%
+  mutate(sentiment_majority = "neutral", 
+         sentiment_paho = factor(sentiment_paho, ordered = TRUE,
                               levels = c("positive","neutral", "negative")),
-         stance_majority = factor(stance_majority, ordered = TRUE,
+         sentiment_majority = factor(sentiment_majority, ordered = TRUE,
                                   levels = c("positive", "neutral", "negative"))) 
 
-
-conf_epfl_majority <- confusionMatrix(df_con_matrix_majority$stance_majority,
-                                      df_con_matrix_majority$stance_epfl)
+conf_paho_majority <- confusionMatrix(df_con_matrix_majority$sentiment_majority,
+                                      df_con_matrix_majority$sentiment_paho)
 
 ### Merging all confusion matrices -------
 overall_all_fig <- as.data.frame(conf_paho_gpt_all_1$overall) %>% 
@@ -195,8 +193,54 @@ overall_all_fig <- as.data.frame(conf_paho_gpt_all_1$overall) %>%
   cbind(conf_paho_mixtral_all_1$overall) %>% 
   cbind(conf_paho_mixtral_all_2$overall) %>% 
   cbind(conf_paho_mixtral_all_3$overall) %>%
+  cbind(conf_paho_majority$overall) %>% 
   t() %>% 
   as.data.frame() %>% 
   arrange(desc(Accuracy)) %>% 
   select(-Kappa) %>% 
-  rownames_to_column("method") 
+  rownames_to_column("method") %>% 
+  mutate(method = str_replace_all(method, 
+                                  c("conf_paho_" = "", 
+                                    "\\$overall" = "",
+                                    "mixtral_all_2" = "Mixtral prompt 2",
+                                    "mixtral_all_1" = "Mixtral prompt 1",
+                                    "mixtral_all_3" = "Mixtral prompt 3",
+                                    "gpt_all_2" = "GPT 4 prompt 2",
+                                    "gpt_all_1" = "GPT 4 prompt 1",
+                                    "gpt_all_3" = "GPT 4 prompt 3",
+                                    "majority" = "Majority"))) %>% 
+  select(method, Accuracy, AccuracyLower, AccuracyUpper, AccuracyPValue) %>% 
+  separate(col = "method", into = c("Method", "Prompt"), sep = " prompt ") %>% 
+  mutate(Pvalue = case_when(AccuracyPValue <= 0.05 ~ "<= 0.05",
+                            .default = "> 0.05"),
+         agreement = "Partial agreement",
+         Prompt = replace_na(Prompt, "None"))
+
+overall_all <- overall_all_fig %>% 
+  mutate(Accuracy = round(Accuracy, 4),
+         AccuracyLower = round(AccuracyLower, 4),
+         AccuracyUpper = round(AccuracyUpper, 4),
+         AccuracyPValue = round(AccuracyPValue, 6),
+         AccuracyCI = paste("(", AccuracyLower, " - ", AccuracyUpper, ")", sep = "")) %>%
+  select(Method, Prompt, Accuracy, AccuracyCI, AccuracyPValue) %>% 
+  rename("Accuracy (95% CI)" = "AccuracyCI",
+         "Accuracy (p-value)" = "AccuracyPValue")
+
+overall_all %>%
+  write_csv("outputs/confusion_matrix_accuracy.csv")
+
+### Plot accuracy ----------------
+accuracy_fig <- overall_all_fig %>% 
+  filter(!is.na(Prompt)) %>% 
+  ggplot(aes(x = Prompt, y = Accuracy)) +
+  geom_point(
+    #aes(color = Pvalue)
+    ) +
+  geom_errorbar(aes(ymin = AccuracyLower,
+                    ymax = AccuracyUpper
+                    #,color = Pvalue
+                    ),
+                width = 0.2) +
+  facet_grid(~Method, scales = "free_x") 
+
+accuracy_fig
