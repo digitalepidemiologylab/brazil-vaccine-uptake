@@ -104,8 +104,12 @@ gpt4t_clean <- gpt4t %>%
          n_sent = str_count(sentiment_gpt_standardised, pattern = fixed("***")) +1,
          n_diff = n_text - n_sent,
          # TO DO (next mutate)
-         # sentiment_gpt_grouped2 = case_when(words_type == "single_word" && n_diff == 9 ~ paste(replicate(9, sentiment_gpt_grouped), collapse = "***"),
-         #                                    .default = sentiment_gpt_grouped)
+         # sentiment_gpt_standardised = case_when(words_type == "single_word" && n_diff == 9 ~ paste(sentiment_gpt_standardised, sentiment_gpt_standardised,
+         #                                                                                            sentiment_gpt_standardised, sentiment_gpt_standardised,
+         #                                                                                            sentiment_gpt_standardised, sentiment_gpt_standardised,
+         #                                                                                            sentiment_gpt_standardised, sentiment_gpt_standardised,
+         #                                                                                            sentiment_gpt_standardised, sep = "***")),
+         #                                    .default = sentiment_gpt_standardised)
          )
 
 # TO DO: Find a solution for neutro***positivo***positivo
