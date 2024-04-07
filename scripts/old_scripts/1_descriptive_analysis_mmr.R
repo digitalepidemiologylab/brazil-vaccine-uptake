@@ -4,20 +4,6 @@
 #' Date created: 26 July 2021
 #' Date updated: 05 February 2023
 
-# 1 - Packages ----------------------
-# install/load "pacman" to help installing and loading other packages
-message("Installing and loading packages")
-
-while (require("pacman") == FALSE) {
-  install.packages("pacman")
-  library("pacman")
-}
-
-# load packages
-p_load(caTools, data.table, DataExplorer, ggpubr, ggspatial, graphics, 
-       gtsummary, janitor, lubridate, padr, plotly, readr, readxl, 
-       rnaturalearth, stats, tidyverse, tools, utils, zoo)
-
 # 2 - Import cleaned Twitter data ----------------
 message("Importing Twitter data")
 ## Steps 2-5 can be omitted

@@ -78,7 +78,7 @@ id_gpt = []
 sent_gpt = []
 text = []
 
-for i in range(60000, 80000):
+for i in range(73743, 80000):
     prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text_df.iloc[i,0])
     response = openai.ChatCompletion.create(
             model = "gpt-4-0125-preview",
@@ -97,14 +97,14 @@ for i in range(60000, 80000):
 df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
         columns = ['text', 'sentiment_gpt'])
 
-df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_0_61235.csv')  
+df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_0_79999.csv')  
 
-# Loop for combined texts df tmux 1
+# Loop for combined texts df tmux 1 (running)
 id_gpt = []
 sent_gpt = []
 text = []
 
-for i in range(132592, 160000):
+for i in range(161935, 170000):
     prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text_df.iloc[i,0])
     response = openai.ChatCompletion.create(
             model = "gpt-4-0125-preview",
@@ -123,9 +123,9 @@ for i in range(132592, 160000):
 df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
         columns = ['text', 'sentiment_gpt'])
 
-df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_100000_133729.csv')  
+df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_100000_161934.csv')  
 
-# Loop for tmux 2
+# Loop for tmux 2 (completed)
 combined_text_df = pd.read_csv("tweets_filtered_BR_PT_gpt4turbo_combined.csv").reset_index()
 combined_text_df = combined_text_df[['0']]  
 
@@ -133,7 +133,7 @@ id_gpt = []
 sent_gpt = []
 text = []
 
-for i in range(200000, 216881):
+for i in range(212471, 216881):
     prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text_df.iloc[i,0])
     response = openai.ChatCompletion.create(
             model = "gpt-4-0125-preview",
@@ -152,7 +152,37 @@ for i in range(200000, 216881):
 df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
         columns = ['text', 'sentiment_gpt'])
 
-df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_200000_201089.csv')  
+df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_200000_216880.csv')  
+
+# Loop for tmux 3 (completed)
+combined_text_df = pd.read_csv("tweets_filtered_BR_PT_gpt4turbo_combined.csv").reset_index()
+combined_text_df = combined_text_df[['0']]  
+
+id_gpt = []
+sent_gpt = []
+text = []
+
+for i in range(80426, 100000):
+    prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text_df.iloc[i,0])
+    response = openai.ChatCompletion.create(
+            model = "gpt-4-0125-preview",
+            messages = [{"role": "user", "content": prompt_i}],
+            temperature = 0.8,
+            top_p = 1,
+            frequency_penalty = 0,
+            #timeout = 300.0,
+            presence_penalty = 0
+            )
+    text.append(combined_text_df.iloc[i,0])
+    sent_gpt.append(response.choices[0].message.content)
+    #id_gpt.append(combined_text_df.iloc[i,1])
+    print(i, len(combined_text_df)-i) # Check how many tweets are left
+
+df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
+        columns = ['text', 'sentiment_gpt'])
+
+df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_80000_99999.csv')  
+
 
 # Prompt 2   
 # Setting up the columns for the database with the sentiment
