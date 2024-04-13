@@ -158,17 +158,110 @@ df_summmary
 
 #### Figure
 
+## Frequent words in tweets -------------
+### With all variables -----
+df_clean_words <- df_clean %>% 
+  distinct(text, .keep_all = TRUE) %>% 
+  unnest_tokens(output = words, input = text) %>% 
+  mutate(words = str_replace_all(words, "[:digit:]", ""),
+         words = if_else(words %in% stopwords("pt"), "", words))
+
+### All classes --------
+vc_text_df_raw <- df_clean %>% 
+  distinct(text, .keep_all = TRUE) %>% 
+  unnest_tokens(output = word, input = text) 
+
+vc_text <- Corpus(VectorSource(vc_text_df_raw$word)) %>% 
+  tm_map(content_transformer(tolower)) %>% 
+  tm_map(removePunctuation) %>% 
+  tm_map(stripWhitespace) %>% 
+  tm_map(removeNumbers) %>% 
+  tm_map(removeWords, stopwords("pt"))  
+
+vc_text_df <- tm_map(vc_text, PlainTextDocument)
+vc_text_df <- vc_text$content %>% 
+  data.frame() %>% 
+  rename(words = ".")
+
+words_count <- vc_text_df %>% 
+  group_by(words) %>% 
+  tally() %>% 
+  arrange(desc(n))
+  
+### Positive --------
+vc_text_df_raw_pos <- df_clean %>% 
+  distinct(text, .keep_all = TRUE) %>%
+  filter(sent_gpt == "positive") %>% 
+  unnest_tokens(output = word, input = text) 
+
+vc_text_pos <- Corpus(VectorSource(vc_text_df_raw_pos$word)) %>% 
+  tm_map(content_transformer(tolower)) %>% 
+  tm_map(removePunctuation) %>% 
+  tm_map(stripWhitespace) %>% 
+  tm_map(removeNumbers) %>% 
+  tm_map(removeWords, stopwords("pt"))  
+
+vc_text_df_pos <- tm_map(vc_text_pos, PlainTextDocument)
+vc_text_df_pos <- vc_text_pos$content %>% 
+  data.frame() %>% 
+  rename(words = ".")
+
+words_count_pos <- vc_text_df_pos %>% 
+  group_by(words) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+### Negative -------
+vc_text_df_raw_neg <- df_clean %>% 
+  distinct(text, .keep_all = TRUE) %>%
+  filter(sent_gpt == "negative") %>% 
+  unnest_tokens(output = word, input = text) 
+
+vc_text_neg <- Corpus(VectorSource(vc_text_df_raw_neg$word)) %>% 
+  tm_map(content_transformer(tolower)) %>% 
+  tm_map(removePunctuation) %>% 
+  tm_map(stripWhitespace) %>% 
+  tm_map(removeNumbers) %>% 
+  tm_map(removeWords, stopwords("pt"))  
+
+vc_text_df_neg <- tm_map(vc_text_neg, PlainTextDocument)
+vc_text_df_neg <- vc_text_neg$content %>% 
+  data.frame() %>% 
+  rename(words = ".")
+
+words_count_neg <- vc_text_df_neg %>% 
+  group_by(words) %>% 
+  tally() %>% 
+  arrange(desc(n))
+
+### Neutral ------
+vc_text_df_raw_neu <- df_clean %>% 
+  distinct(text, .keep_all = TRUE) %>%
+  filter(sent_gpt == "neutral") %>% 
+  unnest_tokens(output = word, input = text) 
+
+vc_text_neu <- Corpus(VectorSource(vc_text_df_raw_neu$word)) %>% 
+  tm_map(content_transformer(tolower)) %>% 
+  tm_map(removePunctuation) %>% 
+  tm_map(stripWhitespace) %>% 
+  tm_map(removeNumbers) %>% 
+  tm_map(removeWords, stopwords("pt"))  
+
+vc_text_df_neu <- tm_map(vc_text_neu, PlainTextDocument)
+vc_text_df_neu <- vc_text_neu$content %>% 
+  data.frame() %>% 
+  rename(words = ".")
 ## Time series plots ---------------
 
 ### Time series for sentiment without geo filtering ------------
 sentiment_time_allgeo <- df_clean %>%
-  group_by(created_at, label) %>%
+  group_by(created_at, sent_gpt) %>%
   tally() 
 
 sentiment_time_horiz_allgeo <- sentiment_time_allgeo %>%
-  group_by(created_at_h=floor_date(created_at, "1 day"), label) %>%
+  group_by(created_at_h=floor_date(created_at, "1 day"), sent_gpt) %>%
   tally() %>% 
-  spread(label, n) %>%
+  spread(sent_gpt, n) %>%
   select(created_at_h, positive, neutral, negative) %>% 
   replace_na(list(positive = 0, neutral = 0, negative = 0)) %>%
   mutate(sentiment_raw = ((1 * positive) + (0 * neutral) + (-1 * negative))/ (positive + neutral + negative)) 
@@ -201,7 +294,7 @@ plot_time <- sentiment_time_horiz_allgeo[, c(1,6)] %>%
                    date_labels = "%d %b %Y",
                    limits = c(min(sentiment_time_horiz_allgeo$created_at_h), 
                               max(sentiment_time_horiz_allgeo$created_at_h))) +
-  geom_hline(yintercept=0,  linetype = "dashed", color = "red", size=0.5) +
+  geom_hline(yintercept=0,  linetype = "dashed", color = "red", linewidth=0.5) +
   ggtitle('7-day moving average of Twitter vaccine sentiment index \nin Brazil, January 2013 to December 2019 (n = 2,197,090)') +
   labs(y = "TVS index") +
   #geom_smooth(method = "loess", se = FALSE) +
@@ -361,9 +454,9 @@ plotly_time_mmr
 # 5 - Data analysis by Brazilian states -----------------
 message("Running data analysis by Brazilian states")
 ## Assign LocationCode to tweets---------------
-df_clean_geo_raw <- df_clean_geo
+df_clean_geo_raw <- df_clean
 
-df_clean_geo <- df_clean_geo %>% 
+df_clean_geo <- df_clean %>% 
   mutate(LocationCode = case_when(latitude >= br$Latitude_ymin[1] &
                                     latitude <= br$Latitude_ymax[1] &
                                     longitude >= br$Longitude_xmin[1] &
@@ -569,12 +662,15 @@ df_clean_geo_state$color <- ifelse(df_clean_geo_state$sentiment < 0,
 ## CHECK code #####
 df_clean_geo_all <- sentiment_time_horiz_allgeo %>% 
   select(created_at_h, negative, neutral, positive, sentiment, 
-         sentiment_raw, cat_sent) %>% 
+         sentiment_raw
+         #, cat_sent
+         ) %>% 
   mutate(LocationCode = "BR",
          year = year(created_at_h),
          Longitude_xmin = NA) %>% 
-  rename("date" = "created_at_h",
-         "color" = 'cat_sent') %>% 
+  rename("date" = "created_at_h"
+         #, "color" = 'cat_sent'
+         ) %>% 
   rbind.data.frame(df_clean_geo_state) %>% 
   left_join(br[,c(2,5)])
 

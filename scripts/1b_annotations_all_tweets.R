@@ -36,7 +36,10 @@ gpt4_clean <- gpt4 %>%
   mutate(text = fix_portuguese_encoding(text),
          gpt_sent_presence = 1) %>% 
   rename(sent_gpt = sentiment_gpt) %>% 
-  select(text, sent_gpt, gpt_sent_presence)
+  select(text, sent_gpt, gpt_sent_presence) %>% 
+  mutate(sent_gpt = tolower(sent_gpt), 
+         sent_gpt = str_match(sent_gpt,
+                                     "\\b(neutro|positivo|negativo|neutra|positiva|negativa)\\b")[,2])
 
 rm(gpt4)
 
@@ -155,7 +158,13 @@ gpt4t_clean_nodiff <- gpt4t_clean %>%
 
 annotations_clean <- gpt4t_clean_nodiff %>% 
   rbind(gpt4_clean) %>% 
-  distinct(text, .keep_all = TRUE)
+  distinct(text, .keep_all = TRUE) %>% 
+  mutate(sent_gpt = case_when(is.na(sent_gpt) ~ "neutral",
+                              .default = sent_gpt),
+         sent_gpt = case_when(str_detect(sent_gpt, pattern = "neutr") ~ "neutral",
+                               str_detect(sent_gpt, pattern = "posit") ~ "positive",
+                               str_detect(sent_gpt, pattern = "negat") ~ "negative",
+                              .default = "neutral"))
 
 rm(gpt4t_clean)
 
@@ -173,5 +182,5 @@ df_clean <- df_raw %>%
   distinct(.keep_all = TRUE) %>% 
   filter(gpt_sent_presence == 1)
 
-write_csv(df_clean1, "data/local/tweets_BR_PT_gpt.csv")
+write_csv(df_clean, "data/local/tweets_BR_PT_gpt.csv")
 

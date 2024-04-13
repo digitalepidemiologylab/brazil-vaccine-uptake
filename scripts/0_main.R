@@ -24,7 +24,7 @@ p_load(
   # data.table, ggpubr, ggspatial, 
   graphics, stats, janitor, readr, stringr, tibble, utils,
   readxl, tools, padr, lubridate, gtsummary, DataExplorer,
-  plotly, caTools
+  plotly, caTools, tm, tidytext, textcat
   #    
   # rnaturalearth,  utils, zoo
   )
