@@ -164,93 +164,55 @@ df_clean_words <- df_clean %>%
   distinct(text, .keep_all = TRUE) %>% 
   unnest_tokens(output = words, input = text) %>% 
   mutate(words = str_replace_all(words, "[:digit:]", ""),
-         words = if_else(words %in% stopwords("pt"), "", words))
+         words = if_else(words %in% stopwords("pt"), "", words)) %>% 
+  filter(words != "")
 
-### All classes --------
-vc_text_df_raw <- df_clean %>% 
-  distinct(text, .keep_all = TRUE) %>% 
-  unnest_tokens(output = word, input = text) 
-
-vc_text <- Corpus(VectorSource(vc_text_df_raw$word)) %>% 
-  tm_map(content_transformer(tolower)) %>% 
-  tm_map(removePunctuation) %>% 
-  tm_map(stripWhitespace) %>% 
-  tm_map(removeNumbers) %>% 
-  tm_map(removeWords, stopwords("pt"))  
-
-vc_text_df <- tm_map(vc_text, PlainTextDocument)
-vc_text_df <- vc_text$content %>% 
-  data.frame() %>% 
-  rename(words = ".")
-
-words_count <- vc_text_df %>% 
-  group_by(words) %>% 
+words_count_sentiment <- df_clean_words  %>% 
+  group_by(sent_gpt, words) %>% 
   tally() %>% 
-  arrange(desc(n))
+  arrange(sent_gpt, desc(n)) %>% 
+  group_by(sent_gpt) %>% 
+  slice_head(n = 5) %>% 
+  filter(words != "")
+
+words_count_month <- df_clean_words %>%
+  mutate(month = month(created_at),
+         year = year(created_at),
+         week = week(created_at),
+         year_month = case_when(month <= 9 ~ paste(year, "-0", month, sep = ""),
+                                .default = paste(year, "-", month, sep = "")),
+         year_week = case_when(week <= 9 ~ paste(year, "-w0", week, sep = ""),
+                                .default = paste(year, "-w", week, sep = ""))) %>% 
+  group_by(year_month, words) %>% 
+  tally() %>% 
+  arrange(year_month, desc(n)) %>% 
+  group_by(year_month) %>% 
+  slice_head(n=3) %>% 
+  filter(words != "") %>% 
+  mutate(year_month = factor(year_month, levels = unique(year_month))) %>% 
+  group_by(year_month) %>% 
+  mutate(total = sum(n),
+         percentage = n/total *100) %>% 
+  ungroup() %>% 
+  mutate(word_num = as.numeric(factor(words))) %>% 
+  arrange(year_month, desc(words)) %>%
+  group_by(year_month) %>%
+  mutate(label_pos = cumsum(percentage) - 0.5 * percentage) %>%  # Mid-point of each bar segment
+  ungroup()
   
-### Positive --------
-vc_text_df_raw_pos <- df_clean %>% 
-  distinct(text, .keep_all = TRUE) %>%
-  filter(sent_gpt == "positive") %>% 
-  unnest_tokens(output = word, input = text) 
+  
+words_count_month_fig <- words_count_month %>% 
+  ggplot(aes(x = year_month, y = percentage, fill = words)) +
+  geom_bar(colour = "black", stat = "identity") +
+  geom_text(aes(label = words), size = 4, hjust = 0.5, 
+            #vjust = 3,
+                position = position_stack(vjust = 0.5), 
+            angle = 90, fontface = "bold"
+            )
+  
 
-vc_text_pos <- Corpus(VectorSource(vc_text_df_raw_pos$word)) %>% 
-  tm_map(content_transformer(tolower)) %>% 
-  tm_map(removePunctuation) %>% 
-  tm_map(stripWhitespace) %>% 
-  tm_map(removeNumbers) %>% 
-  tm_map(removeWords, stopwords("pt"))  
+words_count_month_fig
 
-vc_text_df_pos <- tm_map(vc_text_pos, PlainTextDocument)
-vc_text_df_pos <- vc_text_pos$content %>% 
-  data.frame() %>% 
-  rename(words = ".")
-
-words_count_pos <- vc_text_df_pos %>% 
-  group_by(words) %>% 
-  tally() %>% 
-  arrange(desc(n))
-
-### Negative -------
-vc_text_df_raw_neg <- df_clean %>% 
-  distinct(text, .keep_all = TRUE) %>%
-  filter(sent_gpt == "negative") %>% 
-  unnest_tokens(output = word, input = text) 
-
-vc_text_neg <- Corpus(VectorSource(vc_text_df_raw_neg$word)) %>% 
-  tm_map(content_transformer(tolower)) %>% 
-  tm_map(removePunctuation) %>% 
-  tm_map(stripWhitespace) %>% 
-  tm_map(removeNumbers) %>% 
-  tm_map(removeWords, stopwords("pt"))  
-
-vc_text_df_neg <- tm_map(vc_text_neg, PlainTextDocument)
-vc_text_df_neg <- vc_text_neg$content %>% 
-  data.frame() %>% 
-  rename(words = ".")
-
-words_count_neg <- vc_text_df_neg %>% 
-  group_by(words) %>% 
-  tally() %>% 
-  arrange(desc(n))
-
-### Neutral ------
-vc_text_df_raw_neu <- df_clean %>% 
-  distinct(text, .keep_all = TRUE) %>%
-  filter(sent_gpt == "neutral") %>% 
-  unnest_tokens(output = word, input = text) 
-
-vc_text_neu <- Corpus(VectorSource(vc_text_df_raw_neu$word)) %>% 
-  tm_map(content_transformer(tolower)) %>% 
-  tm_map(removePunctuation) %>% 
-  tm_map(stripWhitespace) %>% 
-  tm_map(removeNumbers) %>% 
-  tm_map(removeWords, stopwords("pt"))  
-
-vc_text_df_neu <- tm_map(vc_text_neu, PlainTextDocument)
-vc_text_df_neu <- vc_text_neu$content %>% 
-  data.frame() %>% 
-  rename(words = ".")
 ## Time series plots ---------------
 
 ### Time series for sentiment without geo filtering ------------
