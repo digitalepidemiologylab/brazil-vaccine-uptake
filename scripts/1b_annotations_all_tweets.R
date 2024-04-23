@@ -9,7 +9,8 @@ fix_portuguese_encoding <- function(text) {
   replacements <- c(
     "Ã�" = "Á", "Ã¡" = "á",
     "Ã‰" = "É", "Ã©" = "é",
-    "Ã�" = "Í", "Ã­" = "í",
+    "Ã�" = "Í", 
+    "Ã­" = "í",
     "Ã“" = "Ó", "Ã³" = "ó",
     "Ãš" = "Ú", "Ãº" = "ú",
     "Ã‡" = "Ç", "Ã§" = "ç",
@@ -24,6 +25,9 @@ fix_portuguese_encoding <- function(text) {
 }
 
 
+replacements <- c("Ã¢" = "â", "Ã£" = "ã", "Ã©" = "é", "Ãª" = "ê",
+                  "Ã§" = "ç", "Ã³" = "ó", "Ã´" = "ô", "Ã" = "í")
+
 # Import data ---------
 # ## Data annotated by GPT 4 -----------
 message("Getting GPT 4 annotations for all dataset")
@@ -33,13 +37,20 @@ gpt4 <- vroom(files_gpt4)
 setwd("../..")
 
 gpt4_clean <- gpt4 %>% 
-  mutate(text = fix_portuguese_encoding(text),
-         gpt_sent_presence = 1) %>% 
+  mutate(
+    #text = fix_portuguese_encoding(text),
+         gpt_sent_presence = 1,
+         text = str_replace_all(text, replacements)) %>% 
   rename(sent_gpt = sentiment_gpt) %>% 
   select(text, sent_gpt, gpt_sent_presence) %>% 
   mutate(sent_gpt = tolower(sent_gpt), 
          sent_gpt = str_match(sent_gpt,
-                                     "\\b(neutro|positivo|negativo|neutra|positiva|negativa)\\b")[,2])
+                                     "\\b(neutro|positivo|negativo|neutra|positiva|negativa)\\b")[,2],
+         
+         # tweets where gpt4 "could not provide a sentiment" will be classified as neutral
+         sent_gpt = case_when(is.na(sent_gpt) ~ "neutro",
+                              .default = sent_gpt)) 
+
 
 rm(gpt4)
 
@@ -64,12 +75,14 @@ setwd("../..")
 
 gpt4t_clean <- gpt4t %>% 
   mutate(sentiment_gpt = tolower(sentiment_gpt),
-         text = fix_portuguese_encoding(text)) %>% 
+         text = str_replace_all(text, replacements)) %>% 
   rename(text_grouped = text,
          sentiment_gpt_grouped = sentiment_gpt) %>% 
   #distinct(text_grouped, .keep_all = TRUE) %>% 
   mutate(text_grouped = str_replace_all(text_grouped, '\\*\\*\\*\\*\\*\\*\\*\\*', '\\*\\*\\*'),
          text_grouped = str_replace_all(text_grouped, '\\*\\*\\*\\*\\*\\*', '\\*\\*\\*'),
+         text_grouped = str_replace_all(text_grouped, '\\*\\*\\*\\*\\*', '\\*\\*\\*'),
+         text_grouped = str_replace_all(text_grouped, '\\*\\*\\*\\*', '\\*\\*\\*'),
          sentiment_gpt_grouped = str_replace_all(sentiment_gpt_grouped, "``` ", ""),
          words_type = case_when(str_length(sentiment_gpt_grouped) <= 9 ~ "single_word",
                                 str_detect(sentiment_gpt_grouped, pattern = "\\*neutro\\*|\\*positivo\\*|\\*negativo\\*|\\*neutra\\*|\\*positiva\\*|\\*negativa\\*") ~ "double_star",
@@ -94,7 +107,7 @@ gpt4t_clean <- gpt4t %>%
                                                 words_type == "double_star" ~ paste0(str_extract_all(sentiment_gpt_grouped,
                                                                                                   "\\*neutro\\*|\\*positivo\\*|\\*negativo\\*|\\*neutra\\*|\\*positiva\\*|\\*negativa\\*"), sep = "***"),
                                                 words_type == "colon_start" ~ paste0(str_extract_all(sentiment_gpt_grouped,
-                                                                                                     ": neutro|: positivo|: negativo|: neutra|: positiva|: negativa"), sep = "***"),
+                                                                                                     ": neutro|: positivo|: negativo|: neutra|: positiva|: negativa|:neutro|:positivo|:negativo|:neutra|:positiva|:negativa"), sep = "***"),
                                                 words_type == "hyphen" ~ paste0(str_extract_all(sentiment_gpt_grouped,
                                                                                        "- neutro|- positivo|- negativo|- neutra|- positiva|- negativa"), sep = "***"),
                                                 words_type == "quotation_single" ~ paste0(str_extract_all(sentiment_gpt_grouped,
@@ -132,7 +145,27 @@ gpt4t_clean <- gpt4t %>%
                                                                                                     sentiment_gpt_standardised, sentiment_gpt_standardised,
                                                                                                     sentiment_gpt_standardised, sentiment_gpt_standardised,
                                                                                                     sentiment_gpt_standardised, sentiment_gpt_standardised, sep = "***"),
-                                            .default = sentiment_gpt_standardised),
+                                                .default = sentiment_gpt_standardised),
+         sentiment_gpt_standardised = case_when(str_detect(sentiment_gpt_grouped, pattern ="para os tweets seguintes")  ~ "positivo***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern ="para todos os outros tweets")  ~ "positivo***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern ="para cada tweet mencionado no texto")  ~ "neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern ="os tweets fornecidos não expressam")  ~ "neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern ="para os tweets subsequentes")  ~ "negativo***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*negativo neutro\\*\\*\\*") ~ "negativo***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*neutro positivo positivo\\*\\*\\*") ~ "neutro***positivo***positivo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*neutro negativo neutro\\*\\*\\*") ~ "neutro***negativo***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*negativo \\*\\*\\* neutro \\*\\*\\* negativo\\*\\*\\*") ~ "negativo***neutro***negativo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*positivo negativo positivo\\*\\*\\*") ~ "positivo***negativo***positivo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*neutro positivo negativo\\*\\*\\*") ~ "neutro***positivo***negativo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*neutro \\*\\*\\* negativo \\*\\*\\* positivo\\*\\*\\*") ~ "neutro***negativo***positivo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*neutro negativo neutro\\*\\*\\*") ~ "neutro***negativo***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*neutro negativo neutro\\*\\*\\*") ~ "neutro***negativo***negativo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "para cada um dos tweets mencionados, a atitude do a") ~ "positivo***positivo***positivo***positivo***positivo***positivo***positivo***positivo***positivo***positivo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "para cada um dos tweets mencionados no texto, a atitud") ~ "neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern = "os tweets mencionados contêm um tom predominantemte") ~ "negativo***negativo***negativo***negativo***negativo***negativo***negativo***negativo***negativo***negativo",
+                                                str_detect(sentiment_gpt_grouped, pattern = "os tweets fornecidos contêm conteúdo que parece ser sa") ~ "neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro***neutro",
+                                                str_detect(sentiment_gpt_grouped, pattern = "\\*\\*\\*neutro positivo neutro\\*\\*\\*") ~ "neutro***positivo***neutro",
+                                                .default = sentiment_gpt_standardised),
          n_text = str_count(text_grouped, pattern = fixed("***")) + 1,
          n_sent = str_count(sentiment_gpt_standardised, pattern = fixed("***")) +1,
          n_diff = n_text - n_sent
@@ -156,15 +189,68 @@ gpt4t_clean_nodiff <- gpt4t_clean %>%
          gpt_sent_presence = 1) %>% 
   distinct(text, .keep_all = TRUE)
 
+gpt4t_clean_nodiff %>% 
+  write.csv("data/local/gpt4turbo_annotations_no_diff.csv")
+
+gpt4t_diff <- gpt4t_clean %>% 
+  filter(n_diff != 0)
+
+write.csv(gpt4t_diff, "data/local/gpt4turbo_annotations_to_clean_manually.csv")
+write.csv(gpt4t_diff2, "data/local/gpt4turbo_annotations_to_clean_manually2.csv")
+
+gpt4t_diff2 <- gpt4t_diff %>% 
+  mutate(id = 1:nrow(gpt4t_diff))
+
+gpt4t_cleaned <- read_csv("data/local/gpt4turbo_annotations_cleaned_manually.csv") %>% 
+  filter(revised == 1) %>% 
+  select(-text_grouped) %>% 
+  left_join(gpt4t_clean %>% select(`...1`, text_grouped, sentiment_gpt_grouped, words_type), by = c("...1", 
+                                                                                                    "words_type",
+                                                                                                    "sentiment_gpt_grouped"))
+  select(-length, -revised, -`...13`, -n_text, -n_sent, -n_diff, -n_sent_new, -n_diff_new) %>% 
+  mutate(n_text = str_count(text_grouped, pattern = fixed("***")) + 1,
+         n_sent = str_count(sentiment_gpt_standardised, pattern = fixed("***")) +1,
+         n_diff = n_text - n_sent,
+         sentiment_gpt_standardised = case_when(n_sent == 1 ~ paste0(sentiment_gpt_standardised, "***none***none***none***none***none***none***none***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 2 ~ paste0(sentiment_gpt_standardised, "***none***none***none***none***none***none***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 3 ~ paste0(sentiment_gpt_standardised, "***none***none***none***none***none***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 4 ~ paste0(sentiment_gpt_standardised, "***none***none***none***none***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 5 ~ paste0(sentiment_gpt_standardised, "***none***none***none***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 6 ~ paste0(sentiment_gpt_standardised, "***none***none***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 7 ~ paste0(sentiment_gpt_standardised, "***none***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 8 ~ paste0(sentiment_gpt_standardised, "***none***none",
+                                                                      sep = ""),
+                                                 n_sent == 9 ~ paste0(sentiment_gpt_standardised, "***none",
+                                                                      sep = "")),
+         n_sent = str_count(sentiment_gpt_standardised, pattern = fixed("***")) +1,
+         n_diff = n_text - n_sent)
+
+gpt4t_cleaned_nodiff <- gpt4t_cleaned %>% 
+  filter(n_diff == 0) %>% 
+  separate_rows(text_grouped, sentiment_gpt_standardised, sep = "\\*\\*\\*") %>% 
+  mutate(text = text_grouped,
+         sent_gpt = sentiment_gpt_standardised) %>% 
+  select(text, sent_gpt) %>% 
+  mutate(gpt_sent_presence = 1)
+
 annotations_clean <- gpt4t_clean_nodiff %>% 
   rbind(gpt4_clean) %>% 
+  rbind(gpt4t_cleaned_nodiff) %>% 
   distinct(text, .keep_all = TRUE) %>% 
   mutate(sent_gpt = case_when(is.na(sent_gpt) ~ "neutral",
                               .default = sent_gpt),
          sent_gpt = case_when(str_detect(sent_gpt, pattern = "neutr") ~ "neutral",
                                str_detect(sent_gpt, pattern = "posit") ~ "positive",
                                str_detect(sent_gpt, pattern = "negat") ~ "negative",
-                              .default = "neutral"))
+                              .default = "neutral")) %>% 
+  mutate(text = fix_portuguese_encoding(text))
 
 rm(gpt4t_clean)
 
@@ -180,7 +266,7 @@ df_clean <- df_raw %>%
   distinct(.keep_all = TRUE) %>% 
   left_join(annotations_clean, by = "text") %>% 
   distinct(.keep_all = TRUE) %>% 
-  filter(gpt_sent_presence == 1)
+  filter(gpt_sent_presence == 1) 
 
 write_csv(df_clean, "data/local/tweets_BR_PT_gpt.csv")
 

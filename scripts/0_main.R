@@ -21,12 +21,14 @@ p_load(
   # caret, 
   
   # Script descriptive analysis     
-  # data.table, ggpubr, ggspatial, 
+  # data.table, ggpubr, 
+  ggspatial, 
   graphics, stats, janitor, readr, stringr, tibble, utils,
   readxl, tools, padr, lubridate, gtsummary, DataExplorer,
-  plotly, caTools, tm, tidytext, textcat
+  plotly, caTools, tm, tidytext, textcat, sf,
   #    
-  # rnaturalearth,  utils, zoo
+  rnaturalearth  
+  #utils, zoo
   )
 
 # Annotations of tweets and full dataset ----------

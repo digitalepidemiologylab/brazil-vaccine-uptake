@@ -207,8 +207,12 @@ words_count_month_fig <- words_count_month %>%
   geom_text(aes(label = words), size = 4, hjust = 0.5, 
             #vjust = 3,
                 position = position_stack(vjust = 0.5), 
-            angle = 90, fontface = "bold"
-            )
+            angle = 90
+            #, fontface = "bold"
+            ) +
+  theme_classic() +
+  scale_y_continuous(expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5))
   
 
 words_count_month_fig
@@ -242,10 +246,9 @@ sentiment_time_horiz_allgeo_cat <- sentiment_time_horiz_allgeo %>%
   arrange(desc(cat_sent)) %>% 
   adorn_totals()
 
-# positive_total <- sentiment_time_horiz_allgeo_cat %>% 
-#   filter(cat_sent == 'positive') %>% 
-#   summarise(sum(n)) %>% 
-#   adorn_totals()
+positive_total <- sentiment_time_horiz_allgeo_cat %>%
+  filter(cat_sent == 'positive') %>%
+  summarise(sum(n)) 
 
 plot_time <- sentiment_time_horiz_allgeo[, c(1,6)] %>% 
   ggplot(aes(x = created_at_h, y = sentiment)) +
@@ -281,14 +284,14 @@ plotly_time
 
 
 ### Time series for sentiment with geo filtering ------------
-sentiment_time <- df_clean_geo %>%
-  group_by(created_at, label) %>%
+sentiment_time <- df_clean %>%
+  group_by(created_at, sent_gpt) %>%
   tally() 
 
 sentiment_time_horiz <- sentiment_time %>%
-  group_by(created_at_h=floor_date(created_at, "1 day"), label) %>%
+  group_by(created_at_h=floor_date(created_at, "1 day"), sent_gpt) %>%
   tally() %>% 
-  spread(label, n) %>%
+  spread(sent_gpt, n) %>%
   select(created_at_h, positive, neutral, negative) %>% 
   replace_na(list(positive = 0, neutral = 0, negative = 0)) %>%
   mutate(sentiment_raw = ((1 * positive) + (0 * neutral) + (-1 * negative))/ (positive + neutral + negative)) 
@@ -594,9 +597,9 @@ df_clean_geo_state <- df_clean_geo %>%
   mutate(year = year(created_at),
          month = month(created_at),
          week = week(created_at)) %>% 
-  group_by(date=floor_date(created_at, "1 day"), LocationCode, label) %>%
+  group_by(date=floor_date(created_at, "1 day"), LocationCode, sent_gpt) %>%
   tally() %>% 
-  spread(label, n) %>%
+  spread(sent_gpt, n) %>%
   #select(date, LocationCode, positive, neutral, negative) %>% 
   replace_na(list(positive = 0, neutral = 0, negative = 0)) %>%
   arrange(LocationCode) %>% 
@@ -629,7 +632,10 @@ df_clean_geo_all <- sentiment_time_horiz_allgeo %>%
          ) %>% 
   mutate(LocationCode = "BR",
          year = year(created_at_h),
-         Longitude_xmin = NA) %>% 
+         Longitude_xmin = NA,
+         color = case_when(sentiment_raw <0 ~ "negative",
+                           sentiment_raw >0 ~ "positive",
+                           .default = "neutral")) %>% 
   rename("date" = "created_at_h"
          #, "color" = 'cat_sent'
          ) %>% 
@@ -639,7 +645,7 @@ df_clean_geo_all <- sentiment_time_horiz_allgeo %>%
 df_clean_geo_all$LocationNameFull <- replace_na(df_clean_geo_all$LocationNameFull,
                                                 " Brazil")
 
-df_clean_geo_all <- df_clean_geo %>% 
+df_clean_geo_all_plot_df <- df_clean_geo %>% 
   group_by(LocationCode) %>% 
   tally() %>% 
   ungroup() %>% 
@@ -653,7 +659,7 @@ df_clean_geo_all <- df_clean_geo %>%
                              format(Total, big.mark = ",", trim = TRUE), 
                              " )", sep = ""))
 
-plot_states <- df_clean_geo_all %>% 
+plot_states <- df_clean_geo_all_plot_df %>% 
   # mutate(sentiment_cat = case_when(sentiment > 0 ~ "Positive",
   #                                  sentiment < 0 ~ "Negative",
   #                                  TRUE ~ "Neutral")) %>% 
@@ -777,6 +783,25 @@ write_csv(df_clean_geo_state_year_2013, 'data/tweets_with_predicted_labels_state
 #devtools::install_github("ropensci/rnaturalearthhires")
 world <- ne_states(returnclass = "sf")
 
+world_countries <- world %>%
+  st_make_valid() %>%  # Attempt to fix invalid geometries
+  st_simplify(dTolerance = 0.01) %>%  # Simplify geometries to remove small artefacts
+  group_by(admin) %>%
+  summarise(geometry = st_union(geometry), .groups = 'drop')  # Merge geometries
+
+
+world_countries <- world %>%
+  st_make_valid() %>%  # Attempt to fix invalid geometries
+  st_simplify(dTolerance = 0.01) %>%  # Simplify geometries
+  group_by(admin) %>%
+  summarise(geometry = st_union(geometry), .groups = 'drop')  # Merge geometries
+
+# Define the bounding box for Brazil and neighboring regions
+bounds <- st_bbox(c(xmin = -82, xmax = -32, ymin = -35, ymax = 7), crs = st_crs(world_countries))
+
+# Clip the world data to the bounding box
+world_clipped <- st_intersection(world_countries, st_as_sfc(bounds))
+
 ### All years -------------------
 world_br_all <- world %>% 
   filter(sov_a3 == "BRA") %>% 
@@ -794,7 +819,8 @@ map_all <- world_br_all %>%
                                    sentiment > -0.05684 & sentiment < -0.04495 ~ "-0.06 to -0.04",
                                    TRUE ~ "> -0.04")) %>%
   ggplot() +
-  geom_sf(aes(fill = world_br_all$sentiment)) +
+  geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+  geom_sf(aes(fill = world_br_all$sentiment), color = "black") +
   scale_fill_viridis_c(option = "B",
                        name = "Twitter vaccine \nsentiment index") +
   #scale_fill_gradient2(midpoint = 0) +
@@ -811,7 +837,8 @@ map_all <- world_br_all %>%
         legend.text = element_text(size = 10),
         title = element_text(size = 14),
         plot.background = element_rect(fill = "white",
-                                        colour = "white"))
+                                        colour = "white")) +
+  coord_sf(xlim = c(-82, -32), ylim = c(-35, 7))
 
 
 map_all
@@ -839,12 +866,10 @@ for (i in 2013:2019) {
                                      sentiment > -0.05684 & sentiment < -0.04495 ~ "-0.06 to -0.04",
                                      TRUE ~ "> -0.04")) %>%
     ggplot() +
-    geom_sf(aes(fill = data_plot$sentiment)) +
+    geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+    geom_sf(aes(fill = world_br_all$sentiment), color = "black") +
     scale_fill_viridis_c(option = "B",
                          name = "Twitter vaccine \nsentiment index") +
-    # scale_fill_gradient(limits = c(0, -0.35),
-    #                     #breaks = c(-0.09104, 0.05684, 0.04495)
-    #                     breaks = c(0.04495, 0.05684, -0.09104)) +
     #scale_fill_gradient2(midpoint = 0) +
     annotation_scale(location = "br", width_hint = 0.3) +
     annotation_north_arrow(location = "br", which_north = "true", 
@@ -852,17 +877,15 @@ for (i in 2013:2019) {
                            style = north_arrow_fancy_orienteering) +
     # coord_sf(xlim = c(-72.9872354804, -33.7683777809), 
     #          ylim = c(-34.7299934555, 5.24448639569 )) +
-    labs(title = paste('Twitter vaccine sentiment index per \nBrazilian state, January ', 
-                       i, ' to \nDecember ', i, ' (n = ', 
-                       format(sum(df_clean_geo_state_plot$tweets), big.mark = ','),
-                       ')', sep = "")) +
+    labs(title = 'Twitter vaccine sentiment index per \nBrazilian state, January 2013 to \nDecember 2019 (n = 1,750,294)') +
     theme_void() +
     theme(legend.position = c(1, 0.4),
           legend.title = element_text(size = 12),
           legend.text = element_text(size = 10),
           title = element_text(size = 14),
           plot.background = element_rect(fill = "white",
-                                         colour = "white"))
+                                         colour = "white")) +
+    coord_sf(xlim = c(-82, -32), ylim = c(-35, 7))
   assign(x = paste("map", i, sep = "_"),
          value = map)
   print(paste0("Printing map for year ", i))
@@ -939,7 +962,8 @@ map_all_facet <- world_br_all_facet %>%
                                                       ")", sep = ""),
                                 TRUE ~ "test")) %>% 
   ggplot() +
-  geom_sf(aes(fill = sentiment)) +
+  geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+  geom_sf(aes(fill = sentiment), color = "black") +
   scale_fill_viridis_c(option = "B",
                        name = "Twitter vaccine \nsentiment index") +
   #scale_fill_gradient2(midpoint = 0) +
@@ -957,8 +981,9 @@ map_all_facet <- world_br_all_facet %>%
         title = element_text(size = 14),
         strip.text = element_text(size=14),
         plot.background = element_rect(fill = "white",
-                                       colour = "white"),
-        panel.border = element_rect(color="black", fill=NA)) +
+                                       colour = "white")
+        #,panel.border = element_rect(color="black", fill=NA)
+        ) +
   facet_wrap(~year_label,
              nrow = 2, scale = "fixed")
 
