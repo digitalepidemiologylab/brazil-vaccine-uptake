@@ -174,10 +174,10 @@ gpt4t_clean <- gpt4t %>%
 
 rm(gpt4t)
 
-gpt4t_clean_text <- gpt4t_clean %>% 
-  select(text_grouped) %>% 
-  separate_rows(text_grouped, sep = "\\*\\*\\*") %>% 
-  rename(text = text_grouped)
+# gpt4t_clean_text <- gpt4t_clean %>% 
+#   select(text_grouped) %>% 
+#   separate_rows(text_grouped, sep = "\\*\\*\\*") %>% 
+#   rename(text = text_grouped)
 
 gpt4t_clean_nodiff <- gpt4t_clean %>% 
   filter(n_diff == 0) %>% 
@@ -202,12 +202,11 @@ gpt4t_diff2 <- gpt4t_diff %>%
   mutate(id = 1:nrow(gpt4t_diff))
 
 gpt4t_cleaned <- read_csv("data/local/gpt4turbo_annotations_cleaned_manually.csv") %>% 
-  filter(revised == 1) %>% 
-  select(-text_grouped) %>% 
-  left_join(gpt4t_clean %>% select(`...1`, text_grouped, sentiment_gpt_grouped, words_type), by = c("...1", 
-                                                                                                    "words_type",
-                                                                                                    "sentiment_gpt_grouped"))
-  select(-length, -revised, -`...13`, -n_text, -n_sent, -n_diff, -n_sent_new, -n_diff_new) %>% 
+  filter(revised == 1) %>%
+  select(sentiment_gpt_standardised, id) %>% 
+  left_join(gpt4t_diff2, by = "id") %>% 
+  select(-sentiment_gpt_standardised.y, -id) %>% 
+  rename(sentiment_gpt_standardised = sentiment_gpt_standardised.x) %>% 
   mutate(n_text = str_count(text_grouped, pattern = fixed("***")) + 1,
          n_sent = str_count(sentiment_gpt_standardised, pattern = fixed("***")) +1,
          n_diff = n_text - n_sent,
