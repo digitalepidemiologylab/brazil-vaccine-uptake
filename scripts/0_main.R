@@ -26,6 +26,7 @@ p_load(
   graphics, stats, janitor, readr, stringr, tibble, utils,
   readxl, tools, padr, lubridate, gtsummary, DataExplorer,
   plotly, caTools, tm, tidytext, textcat, sf,
+  fuzzyjoin,
   #    
   rnaturalearth  
   #utils, zoo

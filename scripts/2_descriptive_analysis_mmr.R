@@ -161,7 +161,7 @@ df_summmary
 ## Frequent words in tweets -------------
 ### With all variables -----
 df_clean_words <- df_clean %>% 
-  distinct(text, .keep_all = TRUE) %>% 
+  #distinct(text, .keep_all = TRUE) %>% 
   unnest_tokens(output = words, input = text) %>% 
   mutate(words = str_replace_all(words, "[:digit:]", ""),
          words = if_else(words %in% stopwords("pt"), "", words)) %>% 

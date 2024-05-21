@@ -42,7 +42,7 @@ Examplos de sentimento negativo: \
 \
 ```{TEXTO_DO_TWEET_AQUI}```"
 
-prompt_2b = "Qual é a atitude do autor em relação às vacinas expresso pelo usuário do texto do tweets delimitados por crases triplos? Existem vários tweets separados por por três asteriscos.  \
+prompt_2b = "Qual é a atitude do autor em relação às vacinas expresso pelo usuário do texto do tweets delimitados por crases triplos? Existem dez tweets separados por três asteriscos.  \
 Para cada um desses tweets, use apenas uma das seguintes palavras: neutro, negativo, positivo.  \
 \
 Exemplos de sentimento positivo: \
@@ -73,13 +73,22 @@ for i in range(0, len(df), num_rows):
 
 combined_text_df = pd.DataFrame(combined_text)
 
+num_rows = 10
+n_tweets = []
+combined_text2 = []
+for i in range(0, len(df_missing), num_rows):
+    n_tweets = "***".join(df_missing['text'].iloc[i:i+10])
+    combined_text2.append(n_tweets)
+
+combined_text2_df = pd.DataFrame(combined_text2)
+
 # Loop for combined texts df tmux 0
 id_gpt = []
 sent_gpt = []
 text = []
 
-for i in range(73743, 80000):
-    prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text_df.iloc[i,0])
+for i in range(64444, 69600):
+    prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text2_df.iloc[i,0])
     response = openai.ChatCompletion.create(
             model = "gpt-4-0125-preview",
             messages = [{"role": "user", "content": prompt_i}],
@@ -89,15 +98,15 @@ for i in range(73743, 80000):
             #timeout = 300.0,
             presence_penalty = 0
             )
-    text.append(combined_text_df.iloc[i,0])
+    text.append(combined_text2_df.iloc[i,0])
     sent_gpt.append(response.choices[0].message.content)
-    #id_gpt.append(combined_text_df.iloc[i,1])
-    print(i, len(combined_text_df)-i) # Check how many tweets are left
+    #id_gpt.append(combined_text2_df.iloc[i,1])
+    print(i, len(combined_text2_df)-i) # Check how many tweets are left
 
 df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
         columns = ['text', 'sentiment_gpt'])
 
-df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_0_79999.csv')  
+df_gpt.to_csv('gpt_sentiment_missing_prompt2b_30000_end.csv')  
 
 # Loop for combined texts df tmux 1 (running)
 id_gpt = []

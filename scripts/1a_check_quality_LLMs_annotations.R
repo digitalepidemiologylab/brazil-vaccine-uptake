@@ -129,8 +129,8 @@ mixtral_clean <- mixtral_pt %>%
 ## Join all datasets ------------
 df_all <- paho_clean %>% 
   left_join(gpt_clean, by = "text") %>% 
-  left_join(mixtral_clean, by = c("text", "prompt")) %>% 
-  select(-model.x, -model.y) %>% 
+  # left_join(mixtral_clean, by = c("text", "prompt")) %>% 
+  # select(-model.x, -model.y) %>% 
   filter(!is.na(prompt))
 
 # Comparison of GPT and Mixtral with PAHO annotations ------------
@@ -157,24 +157,24 @@ for (i in prompts) {
 }
 
 ### PAHO vs Mixtral --------------
-for (i in prompts) {
-  df_con_matrix <- df_all %>% 
-    filter(prompt == i) %>% 
-    select(sentiment_paho, sentiment_mixtral) %>% 
-    mutate(sentiment_paho = factor(sentiment_paho, ordered = TRUE,
-                                   levels = c("positive","neutral", "negative")),
-           sentiment_mixtral = factor(sentiment_mixtral, ordered = TRUE,
-                                  levels = c("positive", "neutral", "negative"))) 
-  assign(paste('df_con_matrix',i,sep='_'), df_con_matrix)
-  #prompt_loop[i] <- prompts[i]
-  conf_paho_mixtral <- confusionMatrix(df_con_matrix$sentiment_mixtral,
-                                   df_con_matrix$sentiment_paho, mode = "everything")
-  conf_paho_mixtral$prompt <- prompts[i]
-  assign(paste('conf_paho_mixtral_all',i,sep='_'),conf_paho_mixtral) 
-  
-}
+# for (i in prompts) {
+#   df_con_matrix <- df_all %>% 
+#     filter(prompt == i) %>% 
+#     select(sentiment_paho, sentiment_mixtral) %>% 
+#     mutate(sentiment_paho = factor(sentiment_paho, ordered = TRUE,
+#                                    levels = c("positive","neutral", "negative")),
+#            sentiment_mixtral = factor(sentiment_mixtral, ordered = TRUE,
+#                                   levels = c("positive", "neutral", "negative"))) 
+#   assign(paste('df_con_matrix',i,sep='_'), df_con_matrix)
+#   #prompt_loop[i] <- prompts[i]
+#   conf_paho_mixtral <- confusionMatrix(df_con_matrix$sentiment_mixtral,
+#                                    df_con_matrix$sentiment_paho, mode = "everything")
+#   conf_paho_mixtral$prompt <- prompts[i]
+#   assign(paste('conf_paho_mixtral_all',i,sep='_'),conf_paho_mixtral) 
+#   
+# }
 
-## EPFL vs selecting majority class ------------  
+## PAHO vs selecting majority class ------------  
 df_con_matrix_majority <- df_all %>% 
   select(sentiment_paho) %>%
   mutate(sentiment_majority = "neutral", 
@@ -190,9 +190,9 @@ conf_paho_majority <- confusionMatrix(df_con_matrix_majority$sentiment_majority,
 overall_all_fig <- as.data.frame(conf_paho_gpt_all_1$overall) %>% 
   cbind(conf_paho_gpt_all_2$overall) %>% 
   cbind(conf_paho_gpt_all_3$overall) %>% 
-  cbind(conf_paho_mixtral_all_1$overall) %>% 
-  cbind(conf_paho_mixtral_all_2$overall) %>% 
-  cbind(conf_paho_mixtral_all_3$overall) %>%
+  # cbind(conf_paho_mixtral_all_1$overall) %>% 
+  # cbind(conf_paho_mixtral_all_2$overall) %>% 
+  # cbind(conf_paho_mixtral_all_3$overall) %>%
   cbind(conf_paho_majority$overall) %>% 
   t() %>% 
   as.data.frame() %>% 
@@ -202,9 +202,9 @@ overall_all_fig <- as.data.frame(conf_paho_gpt_all_1$overall) %>%
   mutate(method = str_replace_all(method, 
                                   c("conf_paho_" = "", 
                                     "\\$overall" = "",
-                                    "mixtral_all_2" = "Mixtral prompt 2",
-                                    "mixtral_all_1" = "Mixtral prompt 1",
-                                    "mixtral_all_3" = "Mixtral prompt 3",
+                                    # "mixtral_all_2" = "Mixtral prompt 2",
+                                    # "mixtral_all_1" = "Mixtral prompt 1",
+                                    # "mixtral_all_3" = "Mixtral prompt 3",
                                     "gpt_all_2" = "GPT 4 prompt 2",
                                     "gpt_all_1" = "GPT 4 prompt 1",
                                     "gpt_all_3" = "GPT 4 prompt 3",
