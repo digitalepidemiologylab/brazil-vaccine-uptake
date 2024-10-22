@@ -27,6 +27,7 @@ p_load(
   readxl, tools, padr, lubridate, gtsummary, DataExplorer,
   plotly, caTools, tm, tidytext, textcat, sf,
   fuzzyjoin,
+  progress, gt,
   #    
   rnaturalearth  
   #utils, zoo

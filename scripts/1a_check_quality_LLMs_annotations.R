@@ -91,7 +91,7 @@ gpt_clean <- gpt_pt %>%
 ## Mixtral annotations -----------------
 message("Getting mixtral annotations")
 setwd("data/local")
-files_mixtral <- fs::dir_ls(glob = "mixtral_sentiment_paho*csv")
+files_mixtral <- fs::dir_ls(glob = "mixtral_sentiment*csv")
 mixtral <- vroom(files_mixtral) %>% 
   mutate(model = "mixtral")
 setwd("../..")
@@ -126,11 +126,48 @@ mixtral_clean <- mixtral_pt %>%
 # mixtral_na <- mixtral_clean %>%
 #   filter(is.na(sentiment_mixtral))
 
+## Llama3 70b annotations -----------------
+message("Getting llama3 annotations")
+setwd("data/local")
+files_llama3 <- fs::dir_ls(glob = "llama3_70b_sentiment_paho*csv")
+llama3 <- vroom(files_llama3) %>% 
+  mutate(model = "llama3")
+setwd("../..")
+
+llama3_pt <- llama3 %>% 
+  filter(prompt != 3) %>% 
+  select(text, sentiment_llama, prompt, model) %>% 
+  mutate(sentiment_llama = tolower(sentiment_llama),
+         #sentiment_mixtral_raw = sentiment_mixtral,
+         sentiment_llama = str_match(sentiment_llama, "\\b(neutro|negativo|positivo|neutra|negativa|positiva)\\b")[,2],
+         sentiment_llama = case_when(is.na(sentiment_llama) ~ "neutro",
+                                       .default = sentiment_llama),
+         sentiment_llama = case_when(sentiment_llama == "positivo" | sentiment_llama == "positiva" ~ "positive",
+                                     sentiment_llama == "negativo" | sentiment_llama == "negativa" ~ "negative",
+                                     sentiment_llama == "neutro" | sentiment_llama == "neutra" ~ "neutral",
+                                       .default = "neutral")) %>% 
+  distinct(text, prompt, .keep_all = TRUE)
+
+llama3_en <- llama3 %>% 
+  filter(prompt == 3) %>% 
+  select(text, sentiment_llama, prompt, model) %>% 
+  mutate(sentiment_llama = tolower(sentiment_llama),
+         #sentiment_mixtral_raw = sentiment_mixtral,
+         sentiment_llama = str_match(sentiment_llama, "\\b(neutral|negative|positive)\\b")[,2],
+         sentiment_llama = case_when(is.na(sentiment_llama) ~ "neutral",
+                                       .default = sentiment_llama)) %>% 
+  distinct(text, prompt, .keep_all = TRUE)
+
+llama3_clean <- llama3_pt %>% 
+  rbind(llama3_en)
+
+
 ## Join all datasets ------------
 df_all <- paho_clean %>% 
   left_join(gpt_clean, by = "text") %>% 
-  # left_join(mixtral_clean, by = c("text", "prompt")) %>% 
-  # select(-model.x, -model.y) %>% 
+  #left_join(mixtral_clean, by = c("text", "prompt")) %>% 
+  left_join(llama3_clean, by = c("text", "prompt")) %>% 
+  select(-model.x, -model.y) %>% 
   filter(!is.na(prompt))
 
 # Comparison of GPT and Mixtral with PAHO annotations ------------
@@ -156,23 +193,42 @@ for (i in prompts) {
    
 }
 
+### PAHO vs Llama3 --------------
+for (i in prompts) {
+  df_con_matrix <- df_all %>% 
+    filter(prompt == i) %>% 
+    select(sentiment_paho, sentiment_llama) %>% 
+    mutate(sentiment_paho = factor(sentiment_paho, ordered = TRUE,
+                                   levels = c("positive","neutral", "negative")),
+           sentiment_llama = factor(sentiment_llama, ordered = TRUE,
+                                  levels = c("positive", "neutral", "negative"))) 
+  assign(paste('df_con_matrix',i,sep='_'), df_con_matrix)
+  #prompt_loop[i] <- prompts[i]
+  conf_paho_llama <- confusionMatrix(df_con_matrix$sentiment_llama,
+                                   df_con_matrix$sentiment_paho, mode = "everything")
+  conf_paho_llama$prompt <- prompts[i]
+  assign(paste('conf_paho_llama_all',i,sep='_'),conf_paho_llama) 
+  
+}
+
+
 ### PAHO vs Mixtral --------------
-# for (i in prompts) {
-#   df_con_matrix <- df_all %>% 
-#     filter(prompt == i) %>% 
-#     select(sentiment_paho, sentiment_mixtral) %>% 
-#     mutate(sentiment_paho = factor(sentiment_paho, ordered = TRUE,
-#                                    levels = c("positive","neutral", "negative")),
-#            sentiment_mixtral = factor(sentiment_mixtral, ordered = TRUE,
-#                                   levels = c("positive", "neutral", "negative"))) 
-#   assign(paste('df_con_matrix',i,sep='_'), df_con_matrix)
-#   #prompt_loop[i] <- prompts[i]
-#   conf_paho_mixtral <- confusionMatrix(df_con_matrix$sentiment_mixtral,
-#                                    df_con_matrix$sentiment_paho, mode = "everything")
-#   conf_paho_mixtral$prompt <- prompts[i]
-#   assign(paste('conf_paho_mixtral_all',i,sep='_'),conf_paho_mixtral) 
-#   
-# }
+for (i in prompts) {
+  df_con_matrix <- df_all %>%
+    filter(prompt == i) %>%
+    select(sentiment_paho, sentiment_mixtral) %>%
+    mutate(sentiment_paho = factor(sentiment_paho, ordered = TRUE,
+                                   levels = c("positive","neutral", "negative")),
+           sentiment_mixtral = factor(sentiment_mixtral, ordered = TRUE,
+                                  levels = c("positive", "neutral", "negative")))
+  assign(paste('df_con_matrix',i,sep='_'), df_con_matrix)
+  #prompt_loop[i] <- prompts[i]
+  conf_paho_mixtral <- confusionMatrix(df_con_matrix$sentiment_mixtral,
+                                   df_con_matrix$sentiment_paho, mode = "everything")
+  conf_paho_mixtral$prompt <- prompts[i]
+  assign(paste('conf_paho_mixtral_all',i,sep='_'),conf_paho_mixtral)
+
+}
 
 ## PAHO vs selecting majority class ------------  
 df_con_matrix_majority <- df_all %>% 
@@ -190,9 +246,13 @@ conf_paho_majority <- confusionMatrix(df_con_matrix_majority$sentiment_majority,
 overall_all_fig <- as.data.frame(conf_paho_gpt_all_1$overall) %>% 
   cbind(conf_paho_gpt_all_2$overall) %>% 
   cbind(conf_paho_gpt_all_3$overall) %>% 
-  # cbind(conf_paho_mixtral_all_1$overall) %>% 
-  # cbind(conf_paho_mixtral_all_2$overall) %>% 
-  # cbind(conf_paho_mixtral_all_3$overall) %>%
+  cbind(conf_paho_mixtral_all_1$overall) %>%
+  cbind(conf_paho_mixtral_all_2$overall) %>%
+  cbind(conf_paho_mixtral_all_3$overall) %>%
+  cbind(conf_paho_llama_all_1$overall) %>% 
+  cbind(conf_paho_llama_all_2$overall) %>% 
+  cbind(conf_paho_llama_all_2$overall) %>%
+  cbind(conf_paho_llama_all_3$overall) %>%
   cbind(conf_paho_majority$overall) %>% 
   t() %>% 
   as.data.frame() %>% 
@@ -202,9 +262,14 @@ overall_all_fig <- as.data.frame(conf_paho_gpt_all_1$overall) %>%
   mutate(method = str_replace_all(method, 
                                   c("conf_paho_" = "", 
                                     "\\$overall" = "",
-                                    # "mixtral_all_2" = "Mixtral prompt 2",
-                                    # "mixtral_all_1" = "Mixtral prompt 1",
-                                    # "mixtral_all_3" = "Mixtral prompt 3",
+                                    "\\.overall" = "",
+                                    "Majority.overall" = "Majority",
+                                    "mixtral_all_2" = "Mixtral prompt 2",
+                                    "mixtral_all_1" = "Mixtral prompt 1",
+                                    "mixtral_all_3" = "Mixtral prompt 3",
+                                    "llama_all_1" = "Llama3 70B prompt 1",
+                                    "llama_all_2" = "Llama3 70B prompt 2",
+                                    "llama_all_3" = "Llama3 70B prompt 3",
                                     "gpt_all_2" = "GPT 4 prompt 2",
                                     "gpt_all_1" = "GPT 4 prompt 1",
                                     "gpt_all_3" = "GPT 4 prompt 3",
@@ -214,7 +279,8 @@ overall_all_fig <- as.data.frame(conf_paho_gpt_all_1$overall) %>%
   mutate(Pvalue = case_when(AccuracyPValue <= 0.05 ~ "<= 0.05",
                             .default = "> 0.05"),
          agreement = "Partial agreement",
-         Prompt = replace_na(Prompt, "None"))
+         Prompt = replace_na(Prompt, "None")) %>% 
+  filter(Prompt != "2.1")
 
 overall_all <- overall_all_fig %>% 
   mutate(Accuracy = round(Accuracy, 4),
@@ -224,7 +290,8 @@ overall_all <- overall_all_fig %>%
          AccuracyCI = paste("(", AccuracyLower, " - ", AccuracyUpper, ")", sep = "")) %>%
   select(Method, Prompt, Accuracy, AccuracyCI, AccuracyPValue) %>% 
   rename("Accuracy (95% CI)" = "AccuracyCI",
-         "Accuracy (p-value)" = "AccuracyPValue")
+         "Accuracy (p-value)" = "AccuracyPValue") %>% 
+  filter(Prompt != "2.1")
 
 overall_all %>%
   write_csv("outputs/confusion_matrix_accuracy.csv")

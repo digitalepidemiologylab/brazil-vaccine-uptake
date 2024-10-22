@@ -15,6 +15,7 @@ openai.api_key = open_ai_key
 
 df = pd.read_csv("tweets_filtered_BR_PT.csv", encoding='latin-1').reset_index().iloc[:,2:]
 df = pd.read_csv("tweets_filtered_BR_PT_gpt4turbo.csv", encoding='latin-1').reset_index().iloc[:,0:]
+df = pd.read_csv("tweets_BR_PT_missing3_for_gpt4turbo.csv", encoding='latin-1').reset_index().iloc[:,0:]
 
 print(df.info())
 
@@ -82,13 +83,31 @@ for i in range(0, len(df_missing), num_rows):
 
 combined_text2_df = pd.DataFrame(combined_text2)
 
+num_rows = 10
+n_tweets = []
+combined_text3 = []
+for i in range(0, len(df_missing2), num_rows):
+    n_tweets = "***".join(df_missing2['text'].iloc[i:i+10])
+    combined_text3.append(n_tweets)
+
+combined_text3_df = pd.DataFrame(combined_text3)
+
+num_rows = 10
+n_tweets = []
+combined_text4 = []
+for i in range(0, len(df_missing3), num_rows):
+    n_tweets = "***".join(df_missing3['text'].iloc[i:i+10])
+    combined_text4.append(n_tweets)
+
+combined_text4_df = pd.DataFrame(combined_text4)
+
 # Loop for combined texts df tmux 0
 id_gpt = []
 sent_gpt = []
 text = []
 
-for i in range(64444, 69600):
-    prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text2_df.iloc[i,0])
+for i in range(13305, 24143):
+    prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text3_df.iloc[i,0])
     response = openai.ChatCompletion.create(
             model = "gpt-4-0125-preview",
             messages = [{"role": "user", "content": prompt_i}],
@@ -98,41 +117,43 @@ for i in range(64444, 69600):
             #timeout = 300.0,
             presence_penalty = 0
             )
-    text.append(combined_text2_df.iloc[i,0])
+    text.append(combined_text3_df.iloc[i,0])
     sent_gpt.append(response.choices[0].message.content)
-    #id_gpt.append(combined_text2_df.iloc[i,1])
-    print(i, len(combined_text2_df)-i) # Check how many tweets are left
+    #id_gpt.append(combined_text3_df.iloc[i,1])
+    print(i, len(combined_text3_df)-i) # Check how many tweets are left
 
-df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
+df_gpt2 = pd.DataFrame(list(zip(text, sent_gpt)),
         columns = ['text', 'sentiment_gpt'])
 
-df_gpt.to_csv('gpt_sentiment_missing_prompt2b_30000_end.csv')  
+df_gpt2.to_csv('gpt_sentiment_missing_2round_prompt2b.csv')  
 
 # Loop for combined texts df tmux 1 (running)
 id_gpt = []
 sent_gpt = []
 text = []
 
-for i in range(161935, 170000):
-    prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text_df.iloc[i,0])
+for i in range(30632, len(combined_text4_df)):
+    prompt_i = prompt_2b.replace('TEXTO_DO_TWEET_AQUI', combined_text4_df.iloc[i,0])
     response = openai.ChatCompletion.create(
-            model = "gpt-4-0125-preview",
+            model = "gpt-4-turbo-2024-04-09",
             messages = [{"role": "user", "content": prompt_i}],
             temperature = 0.8,
             top_p = 1,
             frequency_penalty = 0,
-            #timeout = 300.0,
+            timeout = 1000.0,
             presence_penalty = 0
             )
-    text.append(combined_text_df.iloc[i,0])
+    text.append(combined_text4_df.iloc[i,0])
     sent_gpt.append(response.choices[0].message.content)
     #id_gpt.append(combined_text_df.iloc[i,1])
-    print(i, len(combined_text_df)-i) # Check how many tweets are left
+    print(i, len(combined_text4_df)-i) # Check how many tweets are left
 
 df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
         columns = ['text', 'sentiment_gpt'])
 
-df_gpt.to_csv('gpt_sentiment_prompt2b_all_tweets_100000_161934.csv')  
+df_gpt.to_csv('gpt4turbo_annotations_missing3_0_22035.csv')  
+
+df_gpt_2.to_csv('gpt4turbo_annotations_missing3_22035_30631.csv')  
 
 # Loop for tmux 2 (completed)
 combined_text_df = pd.read_csv("tweets_filtered_BR_PT_gpt4turbo_combined.csv").reset_index()
