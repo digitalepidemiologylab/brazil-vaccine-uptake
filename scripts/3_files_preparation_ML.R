@@ -124,3 +124,4 @@ message("Saving new datasets for machine learning model")
 write_csv(df_clean_geo_ml, 'data/df_monthly_ml.csv')
 write_csv(df_clean_geo_ml_full, 'data/df_monthly_ml_full.csv')
 write_csv(df_clean_geo_ml_short, 'data/df_monthly_ml_short.csv')
+

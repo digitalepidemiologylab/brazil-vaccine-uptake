@@ -130,6 +130,16 @@ rm(world_bank)
 
 #write_csv(world_bank_clean, "data/worldbank_br_clean.csv")
 
+## f) Import measles cases per region and year ----------------
+# https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/s/sarampo/situacao-epidemiologica/casos-confirmados-de-sarampo-brasil-grandes-regioes-e-unidades-federadas-1990-2024
+df_measles <- read_csv("data/measles_1990_2024.csv") %>% 
+  left_join(br[c('LocationName', 'StatesCode')]) %>% 
+  filter(!is.na(LocationName)) %>%  
+  pivot_longer(cols = `1990`:`2024`,
+               names_to = "year",
+               values_to = "measles")
+
+
 # 4 - Descriptive analysis --------------
 message("Running the descriptive analysis")
 ## Twitter data ------------------
@@ -173,225 +183,6 @@ df_summary %>% as_gt() %>% gt::gtsave("outputs/data_summary_year_stance_separate
 
 #### Figure
 
-## Frequent words in tweets -------------
-### Python lemmatisation per sentiment ----------
-# Get unique sentiment labels
-sentiments <- unique(df_clean$sent_gpt)
-
-# Initialize a list to store the word distributions
-word_distributions <- list()
-
-# Process each sentiment separately 
-for (sentiment in sentiments) {
-  # Filter text data for the current sentiment
-  texts <- df_clean %>% filter(sent_gpt == sentiment) %>% pull(cleaned_text_lem)
-  
-  # Combine all text into a single string and split into words
-  all_words <- unlist(str_split(paste(texts, collapse = " "), "\\s+"))
-  
-  # Delete words used for the Twitter search
-  # words_remove <- c("vacina", "vacinação", "vacinado", "vacinar", "vacinal")
-  # words_remove_pattern <- paste(words_remove, collapse = "|")
-  # all_words_cleaned <- all_words[!all_words %in% words_remove]
-  
-  # Count the frequency of each word
-  word_freq <- sort(table(all_words), decreasing = TRUE)
-  
-  # Store the word frequency distribution for the sentiment
-  word_distributions[[sentiment]] <- head(word_freq, 10)  # Get the 10 most common words
-}
-
-keywords_neg <- as.data.frame(word_distributions[["negative"]]) %>% 
-  mutate(sentiment = "negative")
-keywords_neu <- as.data.frame(word_distributions[["neutral"]]) %>% 
-  mutate(sentiment = "neutral")
-keywords_pos <- as.data.frame(word_distributions[["positive"]]) %>% 
-  mutate(sentiment = "positive")
-keywords_all <- keywords_neg %>% 
-  rbind(keywords_neu) %>% 
-  rbind(keywords_pos) %>% 
-  rename(words = all_words,
-         frequency = Freq) %>% 
-  select(sentiment, words, frequency)
-
-keywords_wide <- keywords_all %>%
-  group_by(sentiment) %>%
-  mutate(row = row_number()) %>%  # Add a helper row identifier
-  pivot_wider(
-    names_from = sentiment,            # Pivot based on the sentiment column
-    values_from = c(words, frequency), # Pivot both words and frequency columns
-    names_glue = "{sentiment}_{.value}"  # Create new columns with the sentiment prefix
-  ) %>%
-  select(-row)  %>%  # Remove the helper row identifier
-  select(negative_words, negative_frequency, neutral_words, neutral_frequency, positive_words, positive_frequency)
-
-# Create the GT table
-gt_table <- keywords_wide %>%
-  gt() %>% 
-  tab_spanner(
-    label = "Negative",
-    columns = c(negative_words, negative_frequency)
-  ) %>%
-  tab_spanner(
-    label = "Neutral",
-    columns = c(neutral_words, neutral_frequency)
-  ) %>%
-  tab_spanner(
-    label = "Positive",
-    columns = c(positive_words, positive_frequency)
-  ) %>%
-  # Optionally, relabel the columns if needed
-  cols_label(
-    negative_words = "Words",
-    negative_frequency = "Frequency",
-    neutral_words = "Words",
-    neutral_frequency = "Frequency",
-    positive_words = "Words",
-    positive_frequency = "Frequency"
-  ) %>%
-  # Add borders between the columns of different stances using tab_style
-  tab_style(
-    style = cell_borders(
-      sides = c("left", "right"),  # Apply borders to both sides of the cells
-      color = "black",  # Set the border color to black
-      weight = px(1)    # Set the border thickness to 1px
-    ),
-    locations = cells_body(
-      columns = everything()  # Apply to all body columns
-    )
-  ) %>%
-  tab_style(
-    style = cell_borders(
-      sides = "bottom",  # Add a bottom border
-      color = "black",
-      weight = px(1)
-    ),
-    locations = cells_body(
-      columns = everything()  # Apply to all body columns
-    )
-  ) %>%
-  # Add vertical borders to the header rows (both spanner and labels)
-  tab_style(
-    style = cell_borders(
-      sides = c("left", "right"),  # Apply vertical borders
-      color = "black",  # Set the border color to black
-      weight = px(3)    # Set the border thickness to 1px
-    ),
-    locations = list(
-      cells_column_spanners(),      # Add vertical borders to the spanner (top) row
-      cells_column_labels(columns = everything())  # Add vertical borders to the labels row
-    )
-  )%>%
-  # Add borders for the column labels
-  tab_options(
-    column_labels.border.top.color = "black",
-    column_labels.border.top.width = px(2),
-    column_labels.border.bottom.color = "black",
-    column_labels.border.bottom.width = px(2),
-    table.border.top.color = "black",
-    table.border.top.width = px(2),
-    table.border.bottom.color = "black",
-    table.border.bottom.width = px(2)
-  )
-
-# Print the table in the RStudio viewer
-print(gt_table)
-
-
-gtsave(gt_table, filename = "outputs/words_distribution_table_sentiment.png")
-
-### For time and sentiment -----------
-# Process each sentiment separately with progress tracking
-df_words <- df_clean %>% 
-  select(cleaned_text_lem, created_at, id, sent_gpt) %>% 
-  unnest_tokens(output = words, input = cleaned_text_lem) %>% 
-  #filter(nchar(words) > 1) %>% 
-  mutate(month = month(created_at),
-         year = year(created_at),
-         week = week(created_at),
-         year_month = case_when(month <= 9 ~ paste(year, "-0", month, sep = ""),
-                                .default = paste(year, "-", month, sep = "")),
-         year_week = case_when(week <= 9 ~ paste(year, "-w0", week, sep = ""),
-                               .default = paste(year, "-w", week, sep = "")))
-
-df_words_week <- df_words %>% 
-  mutate(words = case_when(words == "vacina" | words == "vacinao" | words == "vacinaor" | words == "vacinar" | words == "vacino" ~ "vacin*",
-                           .default = words)) %>% 
-  group_by(year_week, sent_gpt, words) %>% 
-  tally() %>% 
-  arrange(year_week, sent_gpt, desc(n)) %>% 
-  slice_head(n = 3)
-
-unique(df_words_week$words)
-
-df_words_month <- df_words %>% 
-  mutate(words = case_when(words == "vacina" | words == "vacinao" | words == "vacinaor" | words == "vacinar" | words == "vacino" ~ "vacin*",
-                           .default = words)) %>% 
-  group_by(year_month, sent_gpt, words) %>% 
-  tally() %>% 
-  arrange(year_month, sent_gpt, desc(n)) %>% 
-  slice_head(n = 3) %>% 
-  ungroup() %>% 
-  group_by(year_month, sent_gpt) %>% 
-  mutate(total = sum(n),
-         percentage = n/total *100)
-
-unique(df_words_month$words)
-
-#### Figure ------------
-df_words_month_fig <- df_words_month %>% 
-  ungroup() %>% 
-  mutate(year_month = factor(year_month, levels = unique(year_month))) %>% 
-  ggplot(aes(x = year_month, y = percentage, fill = words)) +
-  geom_bar(
-    colour = "black", 
-    stat = "identity",
-    linewidth = 0.25) +
-  geom_text(aes(label = words), size = 2, hjust = 0.5,
-            #vjust = 3,
-            position = position_stack(vjust = 0.5),
-            angle = 90
-            #, fontface = "bold"
-  ) +
-  theme_classic() +
-  scale_x_discrete(breaks = unique(df_words_month$year_month)[seq(1, length(unique(df_words_month$year_month)), by = 3)]) +  # Fewer labels
-  scale_y_continuous(expand = c(0,0)) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, 
-                                   hjust = 0.5,
-                                   size = 10)) +
-  facet_grid(rows = vars(sent_gpt))
-
-df_words_month_fig
-
-ggsave("outputs/keywords_month_stance.png", 
-       df_words_month_fig,
-       height = 5,
-       width = 9)
-
-# ### R text cleaning per sentiment -----
-# df_clean_words <- df_clean %>% 
-#   #distinct(text, .keep_all = TRUE) %>% 
-#   select(text, created_at, id, sent_gpt) %>%  
-#   mutate(text = tolower(text),
-#          text = removePunctuation(text),
-#          text = removeNumbers(text),
-#          text = stripWhitespace(text),
-#          text = str_replace_all(text, "[^a-zA-Z\\s]", "")) %>% 
-#   unnest_tokens(output = words, input = text) %>% 
-#   mutate(words = if_else(words %in% stopwords("pt"), "", words)) %>% 
-#   filter(words != "")
-# 
-# keywords_all <- df_clean_words %>% 
-#   group_by(sent_gpt, words) %>% 
-#   tally() %>% 
-#   arrange(sent_gpt, desc(n))
-# words_count_neg <- df_clean_words_neg  %>% 
-#   group_by(words) %>% 
-#   tally() %>% 
-#   arrange(desc(n)) %>% 
-#   #group_by(sent_gpt) %>% 
-#   #slice_head(n = 10) %>% 
-#   filter(words != "")
 
 ## Time series plots ---------------
 
@@ -877,7 +668,11 @@ plot_states <- df_clean_geo_all_plot_df %>%
   # mutate(sentiment_cat = case_when(sentiment > 0 ~ "Positive",
   #                                  sentiment < 0 ~ "Negative",
   #                                  TRUE ~ "Neutral")) %>% 
+  filter(LocationCode != "BR") %>% 
   filter(!is.na(LocationNameFull)) %>% 
+  # mutate(sentiment_color = case_when(sentiment > 0 ~ "Positive",
+  #                                    sentiment < 0 ~ "Negative",
+  #                                    sentiment == 0 ~ "Neutral")) +
   ggplot(aes(x = date, y = sentiment)) +
   geom_line(colour = "dark green", size = 0.5) +
   # geom_point(aes(x = date, y = sentiment,
@@ -895,18 +690,19 @@ plot_states <- df_clean_geo_all_plot_df %>%
   #geom_smooth(method = "loess", se = FALSE) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90),
-        plot.title = element_text(size = 12, hjust = 0.5),
+        plot.title = element_text(size = 10, hjust = 0.5),
         axis.text = element_text(size = 10)) +
   facet_wrap(vars(label_plot), 
              #scales = "free_y", 
-             ncol = 4)
+             #ncol = 4
+             ncol = 3)
 
 # Show plot
 plot_states
 
 # save plot
 ggsave("outputs/twitter_sentiment_br_states.png", plot_states,
-      width = 12, height = 6)
+      width = 10, height = 12)
 
 # Interactive plot (plotly)
 plotly_states <- ggplotly(plot_states) 
@@ -1212,4 +1008,97 @@ map_all_facet
 
 ggsave("outputs/map_sentiment_2013_2019_facet.png", 
        map_all_facet, width = 10, height = 5)
+
+## Maps for measles cases -----------
+# Create a continuous color scale with white for zeros
+viridis_colors <- viridis::viridis(193, option = "B")
+# Add white at the beginning of the color scale
+class_colors <- c("white", "#f7fcf0", "#e0f3db", 
+                  "#ccece6", "#99d8c9")
+
+df_measles_year <- df_measles %>% 
+  group_by(year) %>% 
+  summarise(measles = sum(measles))
+
+# Plot map
+quartiles <- df_measles %>% 
+  filter(year >= 2013 & year <= 2019) %>% 
+  filter(measles != 0) %>% 
+  select(measles) %>% 
+  quantile(probs = seq(0, 1, by = 0.25), na.rm = TRUE)
+
+map_measles <- world %>% 
+  filter(sov_a3 == "BRA") %>% 
+  arrange(iso_3166_2)  %>% 
+  mutate(name_pt_case = str_to_title(name_pt)) %>% 
+  left_join(br,
+            by = c("name_pt_case" = "LocationNameFull")) %>% 
+  left_join(df_measles,
+            by = c("StatesCode", "LocationName"))  %>% 
+  mutate(year = as.numeric(year)) %>% 
+  mutate(measles_class = case_when(
+    measles == 0 ~ "0",
+    TRUE ~ cut(measles, 
+               breaks = quartiles, 
+               include.lowest = TRUE, 
+               labels = c(
+                 paste0("Quartile 1 (", round(quartiles[1], 2), ", ", round(quartiles[2], 2), "]"),
+                 paste0("Quartile 2 (", round(quartiles[2], 2), ", ", round(quartiles[3], 2), "]"),
+                 paste0("Quartile 3 (", round(quartiles[3], 2), ", ", round(quartiles[4], 2), "]"),
+                 paste0("Quartile 4 (", round(quartiles[4], 2), ", ", round(quartiles[5], 2), "]")
+               ))
+  )) %>% 
+  filter(!is.na(measles_class)) %>% 
+  filter(year >= 2013 & year <= 2019) %>% 
+  mutate(year_label = case_when(year == 2013 ~ paste0("Jan-Dec ", 2013, " ", "(n=", 
+                                                      format(df_measles_year[24,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2014 ~ paste0("Jan-Dec ", 2014, " ", "(n=", 
+                                                      format(df_measles_year[25,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2015 ~ paste0("Jan-Dec ", 2015, " ", "(n=", 
+                                                      format(df_measles_year[26,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2016 ~ paste0("Jan-Dec ", 2016, " ", "(n=", 
+                                                      format(df_measles_year[27,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2017 ~ paste0("Jan-Dec ", 2017, " ", "(n=", 
+                                                      format(df_measles_year[28,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2018 ~ paste0("Jan-Dec ", 2018, " ", "(n=", 
+                                                      format(df_measles_year[29,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2019 ~ paste0("Jan-Dec ", 2019, " ", "(n=", 
+                                                      format(df_measles_year[30,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                TRUE ~ "test")) %>% 
+  ggplot() +
+  geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+  geom_sf(aes(fill = measles_class), color = "black") +
+  #scale_fill_viridis_c(option = "B",
+  #                     name = "Measles cases") +
+  scale_fill_manual(values = class_colors, name = "Measles cases") +
+  theme_void() +
+  theme(legend.position = c(0.85, 0.3),
+        legend.title = element_text(size = 12, hjust = 0.5),
+        legend.text = element_text(size = 10),
+        title = element_text(size = 14),
+        strip.text = element_text(size=14),
+        plot.background = element_rect(fill = "white",
+                                       colour = "white")
+        #,panel.border = element_rect(color="black", fill=NA)
+  ) +
+  facet_wrap(~year_label, nrow = 2, scale = "fixed")
+
+map_measles
+
+ggsave("outputs/map_measles_2013_2019_facet.png", 
+       map_measles, width = 10, height = 5)
 
