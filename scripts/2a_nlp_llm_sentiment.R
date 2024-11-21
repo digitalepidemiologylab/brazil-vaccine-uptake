@@ -259,20 +259,6 @@ for (i in unique(df_clean_2019$year_month)) {
     write_csv(paste("data/local/df_neu_", i, ".csv", sep = ""))
 }
 
-### Merge results per stance -------------
-setwd("data")
-files <- fs::dir_ls(glob = "summary_2019_*csv")
-df_2019_sum <- vroom(files)
-setwd("..")
-
-df_2019_sum <- df_2019_sum %>% 
-  separate(col = "dataset", into = c("year", "month", "stance"),
-           sep = "_") %>% 
-  mutate(year_month = paste(year, month, sep = "_"))%>% 
-  select(year_month, stance, summary) %>% 
-  arrange(year_month, stance)
-
-df_2019_sum %>% write_csv("data/summary_2019_tweets.csv")
 
 ## 2018 -------------
 df_clean_2018 <- df_clean %>% 
@@ -325,3 +311,279 @@ for (i in unique(df_clean_2018$year_month)) {
   assign(paste('df_neu',i,sep='_'), df_neu_month) %>% 
     write_csv(paste("data/local/df_neu_", i, ".csv", sep = ""))
 }
+
+## 2017 -------------
+df_clean_2017 <- df_clean %>% 
+  filter(year(created_at) == 2017) %>% 
+  mutate(month = month(created_at),
+         year = year(created_at),
+         week = week(created_at),
+         year_month = case_when(month <= 9 ~ paste(year, "-0", month, sep = ""),
+                                .default = paste(year, "-", month, sep = "")),
+         year_week = case_when(week <= 9 ~ paste(year, "-w0", week, sep = ""),
+                               .default = paste(year, "-w", week, sep = ""))) 
+
+df_clean_2017_pos <- df_clean_2017 %>% 
+  filter(sent_gpt == "positive")
+df_clean_2017_neg <- df_clean_2017 %>% 
+  filter(sent_gpt == "negative")
+df_clean_2017_neu <- df_clean_2017 %>% 
+  filter(sent_gpt == "neutral")
+
+### Per week --------------
+weeks_pos <- unique(df_clean_2017_pos$year_week)
+weeks_neg <- unique(df_clean_2017_neg$year_week)
+weeks_neu <- unique(df_clean_2017_neu$year_week)
+
+for (i in weeks_pos) {
+  df_pos <- df_clean_2017_pos %>% 
+    filter(year_week == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+### Per month --------------
+for (i in unique(df_clean_2017$year_month)) {
+  df_pos_month <- df_clean_2017_pos %>% 
+    filter(year_month == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos_month) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2017$year_month)) {
+  df_neg_month <- df_clean_2017_neg %>% 
+    filter(year_month == i) 
+  assign(paste('df_neg',i,sep='_'), df_neg_month) %>% 
+    write_csv(paste("data/local/df_neg_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2017$year_month)) {
+  df_neu_month <- df_clean_2017_neu %>% 
+    filter(year_month == i) 
+  assign(paste('df_neu',i,sep='_'), df_neu_month) %>% 
+    write_csv(paste("data/local/df_neu_", i, ".csv", sep = ""))
+}
+
+## 2016 -------------
+df_clean_2016 <- df_clean %>% 
+  filter(year(created_at) == 2016) %>% 
+  mutate(month = month(created_at),
+         year = year(created_at),
+         week = week(created_at),
+         year_month = case_when(month <= 9 ~ paste(year, "-0", month, sep = ""),
+                                .default = paste(year, "-", month, sep = "")),
+         year_week = case_when(week <= 9 ~ paste(year, "-w0", week, sep = ""),
+                               .default = paste(year, "-w", week, sep = ""))) 
+
+df_clean_2016_pos <- df_clean_2016 %>% 
+  filter(sent_gpt == "positive")
+df_clean_2016_neg <- df_clean_2016 %>% 
+  filter(sent_gpt == "negative")
+df_clean_2016_neu <- df_clean_2016 %>% 
+  filter(sent_gpt == "neutral")
+
+### Per week --------------
+weeks_pos <- unique(df_clean_2016_pos$year_week)
+weeks_neg <- unique(df_clean_2016_neg$year_week)
+weeks_neu <- unique(df_clean_2016_neu$year_week)
+
+for (i in weeks_pos) {
+  df_pos <- df_clean_2016_pos %>% 
+    filter(year_week == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+### Per month --------------
+for (i in unique(df_clean_2016$year_month)) {
+  df_pos_month <- df_clean_2016_pos %>% 
+    filter(year_month == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos_month) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2016$year_month)) {
+  df_neg_month <- df_clean_2016_neg %>% 
+    filter(year_month == i) 
+  assign(paste('df_neg',i,sep='_'), df_neg_month) %>% 
+    write_csv(paste("data/local/df_neg_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2016$year_month)) {
+  df_neu_month <- df_clean_2016_neu %>% 
+    filter(year_month == i) 
+  assign(paste('df_neu',i,sep='_'), df_neu_month) %>% 
+    write_csv(paste("data/local/df_neu_", i, ".csv", sep = ""))
+}
+
+## 2015 -------------
+df_clean_2015 <- df_clean %>% 
+  filter(year(created_at) == 2015) %>% 
+  mutate(month = month(created_at),
+         year = year(created_at),
+         week = week(created_at),
+         year_month = case_when(month <= 9 ~ paste(year, "-0", month, sep = ""),
+                                .default = paste(year, "-", month, sep = "")),
+         year_week = case_when(week <= 9 ~ paste(year, "-w0", week, sep = ""),
+                               .default = paste(year, "-w", week, sep = ""))) 
+
+df_clean_2015_pos <- df_clean_2015 %>% 
+  filter(sent_gpt == "positive")
+df_clean_2015_neg <- df_clean_2015 %>% 
+  filter(sent_gpt == "negative")
+df_clean_2015_neu <- df_clean_2015 %>% 
+  filter(sent_gpt == "neutral")
+
+### Per week --------------
+weeks_pos <- unique(df_clean_2015_pos$year_week)
+weeks_neg <- unique(df_clean_2015_neg$year_week)
+weeks_neu <- unique(df_clean_2015_neu$year_week)
+
+for (i in weeks_pos) {
+  df_pos <- df_clean_2015_pos %>% 
+    filter(year_week == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+### Per month --------------
+for (i in unique(df_clean_2015$year_month)) {
+  df_pos_month <- df_clean_2015_pos %>% 
+    filter(year_month == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos_month) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2015$year_month)) {
+  df_neg_month <- df_clean_2015_neg %>% 
+    filter(year_month == i) 
+  assign(paste('df_neg',i,sep='_'), df_neg_month) %>% 
+    write_csv(paste("data/local/df_neg_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2015$year_month)) {
+  df_neu_month <- df_clean_2015_neu %>% 
+    filter(year_month == i) 
+  assign(paste('df_neu',i,sep='_'), df_neu_month) %>% 
+    write_csv(paste("data/local/df_neu_", i, ".csv", sep = ""))
+}
+
+## 2014 -------------
+df_clean_2014 <- df_clean %>% 
+  filter(year(created_at) == 2014) %>% 
+  mutate(month = month(created_at),
+         year = year(created_at),
+         week = week(created_at),
+         year_month = case_when(month <= 9 ~ paste(year, "-0", month, sep = ""),
+                                .default = paste(year, "-", month, sep = "")),
+         year_week = case_when(week <= 9 ~ paste(year, "-w0", week, sep = ""),
+                               .default = paste(year, "-w", week, sep = ""))) 
+
+df_clean_2014_pos <- df_clean_2014 %>% 
+  filter(sent_gpt == "positive")
+df_clean_2014_neg <- df_clean_2014 %>% 
+  filter(sent_gpt == "negative")
+df_clean_2014_neu <- df_clean_2014 %>% 
+  filter(sent_gpt == "neutral")
+
+### Per week --------------
+weeks_pos <- unique(df_clean_2014_pos$year_week)
+weeks_neg <- unique(df_clean_2014_neg$year_week)
+weeks_neu <- unique(df_clean_2014_neu$year_week)
+
+for (i in weeks_pos) {
+  df_pos <- df_clean_2014_pos %>% 
+    filter(year_week == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+### Per month --------------
+for (i in unique(df_clean_2014$year_month)) {
+  df_pos_month <- df_clean_2014_pos %>% 
+    filter(year_month == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos_month) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2014$year_month)) {
+  df_neg_month <- df_clean_2014_neg %>% 
+    filter(year_month == i) 
+  assign(paste('df_neg',i,sep='_'), df_neg_month) %>% 
+    write_csv(paste("data/local/df_neg_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2014$year_month)) {
+  df_neu_month <- df_clean_2014_neu %>% 
+    filter(year_month == i) 
+  assign(paste('df_neu',i,sep='_'), df_neu_month) %>% 
+    write_csv(paste("data/local/df_neu_", i, ".csv", sep = ""))
+}
+
+## 2013 -------------
+df_clean_2013 <- df_clean %>% 
+  filter(year(created_at) == 2013) %>% 
+  mutate(month = month(created_at),
+         year = year(created_at),
+         week = week(created_at),
+         year_month = case_when(month <= 9 ~ paste(year, "-0", month, sep = ""),
+                                .default = paste(year, "-", month, sep = "")),
+         year_week = case_when(week <= 9 ~ paste(year, "-w0", week, sep = ""),
+                               .default = paste(year, "-w", week, sep = ""))) 
+
+df_clean_2013_pos <- df_clean_2013 %>% 
+  filter(sent_gpt == "positive")
+df_clean_2013_neg <- df_clean_2013 %>% 
+  filter(sent_gpt == "negative")
+df_clean_2013_neu <- df_clean_2013 %>% 
+  filter(sent_gpt == "neutral")
+
+### Per week --------------
+weeks_pos <- unique(df_clean_2013_pos$year_week)
+weeks_neg <- unique(df_clean_2013_neg$year_week)
+weeks_neu <- unique(df_clean_2013_neu$year_week)
+
+for (i in weeks_pos) {
+  df_pos <- df_clean_2013_pos %>% 
+    filter(year_week == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+### Per month --------------
+for (i in unique(df_clean_2013$year_month)) {
+  df_pos_month <- df_clean_2013_pos %>% 
+    filter(year_month == i) 
+  assign(paste('df_pos',i,sep='_'), df_pos_month) %>% 
+    write_csv(paste("data/local/df_pos_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2013$year_month)) {
+  df_neg_month <- df_clean_2013_neg %>% 
+    filter(year_month == i) 
+  assign(paste('df_neg',i,sep='_'), df_neg_month) %>% 
+    write_csv(paste("data/local/df_neg_", i, ".csv", sep = ""))
+}
+
+for (i in unique(df_clean_2013$year_month)) {
+  df_neu_month <- df_clean_2013_neu %>% 
+    filter(year_month == i) 
+  assign(paste('df_neu',i,sep='_'), df_neu_month) %>% 
+    write_csv(paste("data/local/df_neu_", i, ".csv", sep = ""))
+}
+
+## Merge results for all years -------------
+setwd("data")
+files_all_sum <- fs::dir_ls(glob = "summary_2*csv")
+df_all_sum <- vroom(files_all_sum)
+setwd("..")
+
+df_all_sum <- df_all_sum %>% 
+  separate(col = "dataset", into = c("year", "month", "stance"),
+           sep = "_") %>% 
+  mutate(year_month = paste(year, month, sep = "_"))%>% 
+  select(year_month, stance, summary) %>% 
+  arrange(year_month, stance)
+
+df_all_sum %>% write_csv("data/summary_all_tweets.csv")
+

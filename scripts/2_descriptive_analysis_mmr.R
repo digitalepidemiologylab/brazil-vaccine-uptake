@@ -55,7 +55,7 @@ df_pop_clean <- df_pop_clean %>%
   fill(colnames(.), .direction = "down") # fill NA with previous values 
 
 
-## d) Import vaccine uptake data -------------
+## d) Import vaccine uptake data 
 ## Vaccine uptake data from: http://tabnet.datasus.gov.br/cgi/dhdat.exe?bd_pni/dpnibr.def
 ## MMR vaccine uptake in Brazil by states
 
@@ -96,11 +96,37 @@ df_pop_clean <- df_pop_clean %>%
 # 
 # write.csv(df_mmr_month, "data/uptake_br_mmr_2013_2019_clean_month.csv", row.names = FALSE)
 
-### Import clean mmr data
-df_mmr <- read_csv("data/uptake_br_mmr_2013_2019_clean.csv")
+### Import clean mmr uptake data
+# df_mmr_uptake <- read_csv("data/uptake_br_mmr_2013_2019_clean.csv")
+# 
+# df_mmr_uptake_month <- df_mmr %>% 
+#   distinct(year_month, .keep_all = TRUE)
 
-df_mmr_month <- df_mmr %>% 
-  distinct(year_month, .keep_all = TRUE)
+## d) Import vaccine coverage data ---------
+### Import mmr coverage data 
+load("./data/immunization_master_data.RData")
+
+# https://www.synapse.org/Synapse:syn25148356/files/
+df_mmr <- sipni_data %>% 
+  filter(SCOPE == 3) %>% 
+  filter(INDICATOR == "FL_Y1_MMR1") %>%
+  filter(YEAR >= 2012 & YEAR <= 2019) %>% 
+  select(LOCAL_NAME, YEAR, PC_COVERAGE) %>% 
+  rename(StatesCode = LOCAL_NAME) %>% 
+  left_join(br_states, by = "StatesCode") %>% 
+  select(-StatesCode) %>% 
+  rename(year = YEAR) %>% 
+  left_join(br[c("LocationCode", "LocationName")], by = "LocationName")  
+
+df_mmr_trend <- df_mmr %>% 
+  group_by(LocationName) %>% 
+  arrange(LocationName, year) %>% 
+  mutate(trend_mmr = case_when(PC_COVERAGE > lag(PC_COVERAGE) ~ "increased",
+                               PC_COVERAGE == lag(PC_COVERAGE) ~ "equal",
+                               PC_COVERAGE < lag(PC_COVERAGE) ~ "decreased",
+                               .default = NA_character_)) %>% 
+  ungroup()
+  
 
 ## e) World Bank data ------------------------------
 world_bank <- read_csv("data/worldbank_br.csv") %>% 
@@ -138,6 +164,15 @@ df_measles <- read_csv("data/measles_1990_2024.csv") %>%
   pivot_longer(cols = `1990`:`2024`,
                names_to = "year",
                values_to = "measles")
+
+df_measles_trend <- df_measles %>% 
+  group_by(LocationName) %>% 
+  arrange(LocationName, year) %>% 
+  mutate(trend_measles = case_when(measles > lag(measles) ~ "increased",
+                               measles == lag(measles) ~ "equal",
+                               measles < lag(measles) ~ "decreased",
+                               .default = NA_character_)) %>% 
+  ungroup()
 
 
 # 4 - Descriptive analysis --------------
@@ -760,6 +795,18 @@ df_clean_geo_state_by_year <- df_clean_geo_state_year %>%
 
 write_csv(df_clean_geo_state_by_year, 'data/tweets_with_predicted_labels_by_state_year.csv')
 
+df_clean_geo_state_by_year_trend <- df_clean_geo_state_by_year %>% 
+  #filter(LocationNameFull != " Brazil") %>% 
+  select(year, sentiment, LocationCode) %>% 
+  ungroup() %>% 
+  group_by(LocationCode) %>% 
+  arrange(LocationCode, year) %>% 
+  mutate(trend_sentiment = case_when(sentiment > lag(sentiment) ~ "increased",
+                               sentiment == lag(sentiment) ~ "equal",
+                               sentiment < lag(sentiment) ~ "decreased",
+                               .default = NA_character_)) %>% 
+  ungroup()
+
 ### Group data for each year and save csv -----------------
 df_clean_geo_state_year_2019 <- df_clean_geo_state_by_year %>% 
   filter(year == "2019") 
@@ -978,16 +1025,6 @@ map_all_facet <- world_br_all_facet %>%
   geom_sf(aes(fill = sentiment), color = "black") +
   scale_fill_viridis_c(option = "B",
                        name = "Twitter vaccine \nsentiment index") +
-  #scale_fill_gradient2(midpoint = 0) +
-  #annotation_scale(location = "br", width_hint = 0.3) +
-  # annotation_north_arrow(location = "br", which_north = "true", 
-  #                        pad_x = unit(0.75, "in"), pad_y = unit(0.5, "in"),
-  #                        style = north_arrow_fancy_orienteering) +
-  # coord_sf(xlim = c(-72.9872354804, -33.7683777809), 
-  #          ylim = c(-34.7299934555, 5.24448639569 )) +
-  # labs(title = paste('Twitter vaccine sentiment index per Brazilian state and year (n = ',
-  #                    format(nrow(df_clean_geo),
-  #                           big.mark = ","), ")", sep = "")) +
   theme_void() +
   theme(legend.position = c(0.85, 0.3),
         legend.title = element_text(size = 12, hjust = 0.5),
@@ -1008,6 +1045,79 @@ map_all_facet
 
 ggsave("outputs/map_sentiment_2013_2019_facet.png", 
        map_all_facet, width = 10, height = 5)
+
+### All years in facet (trend) --------------
+world_br_all_facet_trend <- world %>% 
+  filter(sov_a3 == "BRA") %>% 
+  arrange(iso_3166_2) %>% 
+  mutate(name_pt_case = str_to_title(name_pt)) %>%
+  left_join(br[, c(2,5)],
+            by = c("name_pt_case" = "LocationNameFull")) %>% 
+  left_join(df_clean_geo_state_by_year_trend,
+            by = c("LocationCode" = "LocationCode")) %>% 
+  filter(!is.na(year)) 
+
+
+map_all_facet_trend <- world_br_all_facet_trend %>% 
+  # mutate(sentiment_cat = case_when(sentiment < -0.09104 ~ "< -0.09",
+  #                                  sentiment > -0.09104 & sentiment < -0.05684 ~ "-0.09 to -0.06",
+  #                                  sentiment > -0.05684 & sentiment < -0.04495 ~ "-0.06 to -0.04",
+  #                                  TRUE ~ "> -0.04")) %>%
+  mutate(year_label = case_when(year == 2013 ~ paste0("Jan-Dec ", 2013, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2013$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2014 ~ paste0("Jan-Dec ", 2014, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2014$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2015 ~ paste0("Jan-Dec ", 2015, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2015$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2016 ~ paste0("Jan-Dec ", 2016, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2016$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2017 ~ paste0("Jan-Dec ", 2017, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2017$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2018 ~ paste0("Jan-Dec ", 2018, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2018$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2019 ~ paste0("Jan-Dec ", 2019, " ", "(n=", 
+                                                      format(sum(df_clean_geo_state_year_2019$tweets),
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                TRUE ~ "test")) %>% 
+  ggplot() +
+  geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+  geom_sf(aes(fill = trend_sentiment), color = "black") +
+  scale_fill_viridis_d(name = "Trend of Twitter vaccine \nsentiment index") +
+  theme_void() +
+  theme(legend.position = c(0.85, 0.3),
+        legend.title = element_text(size = 12, hjust = 0.5),
+        legend.text = element_text(size = 10),
+        title = element_text(size = 14),
+        strip.text = element_text(size=14),
+        plot.background = element_rect(fill = "white",
+                                       colour = "white")
+        #,panel.border = element_rect(color="black", fill=NA)
+  ) +
+  facet_wrap(~year_label,
+             nrow = 2, scale = "fixed")
+
+
+map_all_facet_trend
+
+#ggplotly(map_all_facet)
+
+ggsave("outputs/map_trend_sentiment_2013_2019_facet.png", 
+       map_all_facet_trend, width = 10, height = 5)
+
+
 
 ## Maps for measles cases -----------
 # Create a continuous color scale with white for zeros
@@ -1102,3 +1212,143 @@ map_measles
 ggsave("outputs/map_measles_2013_2019_facet.png", 
        map_measles, width = 10, height = 5)
 
+### Maps for trends of measles cases -----------
+map_measles_trend <- world %>% 
+  filter(sov_a3 == "BRA") %>% 
+  arrange(iso_3166_2)  %>% 
+  mutate(name_pt_case = str_to_title(name_pt)) %>% 
+  left_join(br,
+            by = c("name_pt_case" = "LocationNameFull")) %>% 
+  left_join(df_measles_trend,
+            by = c("StatesCode", "LocationName"))  %>% 
+  mutate(year = as.numeric(year)) %>%
+  #filter(!is.na(measles_class)) %>% 
+  filter(year >= 2013 & year <= 2019) %>% 
+  mutate(year_label = case_when(year == 2013 ~ paste0("Jan-Dec ", 2013, " ", "(n=", 
+                                                      format(df_measles_year[24,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2014 ~ paste0("Jan-Dec ", 2014, " ", "(n=", 
+                                                      format(df_measles_year[25,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2015 ~ paste0("Jan-Dec ", 2015, " ", "(n=", 
+                                                      format(df_measles_year[26,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2016 ~ paste0("Jan-Dec ", 2016, " ", "(n=", 
+                                                      format(df_measles_year[27,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2017 ~ paste0("Jan-Dec ", 2017, " ", "(n=", 
+                                                      format(df_measles_year[28,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2018 ~ paste0("Jan-Dec ", 2018, " ", "(n=", 
+                                                      format(df_measles_year[29,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                year == 2019 ~ paste0("Jan-Dec ", 2019, " ", "(n=", 
+                                                      format(df_measles_year[30,2][[1]],
+                                                             big.mark = ","),
+                                                      ")", sep = ""),
+                                TRUE ~ "test")) %>% 
+  ggplot() +
+  geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+  geom_sf(aes(fill = trend_mmr), color = "black") +
+  #scale_fill_viridis_c(option = "B",
+  #                     name = "Measles cases") +
+  scale_fill_viridis_d(name = "Trend of measles cases") +
+  theme_void() +
+  theme(legend.position = c(0.85, 0.3),
+        legend.title = element_text(size = 12, hjust = 0.5),
+        legend.text = element_text(size = 10),
+        title = element_text(size = 14),
+        strip.text = element_text(size=14),
+        plot.background = element_rect(fill = "white",
+                                       colour = "white")
+        #,panel.border = element_rect(color="black", fill=NA)
+  ) +
+  facet_wrap(~year_label, nrow = 2, scale = "fixed")
+
+map_measles_trend
+
+ggsave("outputs/map_trend_measles_2013_2019_facet.png", 
+       map_measles_trend, width = 10, height = 5)
+
+## Maps for mmr coverage -----------
+
+# Plot map
+map_mmr <- world %>% 
+  filter(sov_a3 == "BRA") %>% 
+  arrange(iso_3166_2)  %>% 
+  left_join(br,
+            by = c("name_pt" = "LocationNameFull")) %>% 
+  left_join(df_mmr,
+            by = c("LocationName"))  %>% 
+  mutate(year = as.numeric(year)) %>% 
+  filter(year >= 2013) %>% 
+  filter(!is.na(PC_COVERAGE)) %>% 
+  mutate(name_pt_case = str_to_title(name_pt),
+         coverage_class = case_when(PC_COVERAGE < 80 ~ "< 80%",
+                                    PC_COVERAGE >= 80 & PC_COVERAGE < 90 ~ " 80-89%",
+                                    PC_COVERAGE >= 90 & PC_COVERAGE <95 ~ " 90-94%",
+                                    PC_COVERAGE >= 95 & PC_COVERAGE <=100 ~ " 95-100%",
+                                    PC_COVERAGE > 100 ~ "  >100%",
+                                    .default = NA)) %>% 
+  ggplot() +
+  geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+  geom_sf(aes(fill = coverage_class), color = "black") +
+  # scale_fill_viridis_c(option = "B",
+  #                      name = "MMR vaccination coverage") +
+  scale_fill_viridis_d(name = "MMR vaccination \ncoverage") +
+  theme_void() +
+  theme(legend.position = c(0.85, 0.3),
+        legend.title = element_text(size = 12, hjust = 0.5),
+        legend.text = element_text(size = 10),
+        title = element_text(size = 14),
+        strip.text = element_text(size=14),
+        plot.background = element_rect(fill = "white",
+                                       colour = "white")
+        #,panel.border = element_rect(color="black", fill=NA)
+  ) +
+  facet_wrap(~year, nrow = 2, scale = "fixed")
+
+map_mmr
+
+ggsave("outputs/map_mmr_coverage_facet.png", 
+       map_mmr, width = 10, height = 5)
+
+### Map for trend of mmr coverage -------------
+map_mmr_trend <- world %>% 
+  filter(sov_a3 == "BRA") %>% 
+  arrange(iso_3166_2)  %>% 
+  left_join(br,
+            by = c("name_pt" = "LocationNameFull")) %>% 
+  left_join(df_mmr_trend,
+            by = c("LocationName"))  %>% 
+  mutate(year = as.numeric(year)) %>% 
+  filter(year >= 2013) %>% 
+  filter(!is.na(trend_mmr)) %>% 
+  ggplot() +
+  geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
+  geom_sf(aes(fill = trend_mmr), color = "black") +
+  # scale_fill_viridis_c(option = "B",
+  #                      name = "MMR vaccination coverage") +
+  scale_fill_viridis_d(name = "Trend of MMR \nvaccination coverage") +
+  theme_void() +
+  theme(legend.position = c(0.85, 0.3),
+        legend.title = element_text(size = 12, hjust = 0.5),
+        legend.text = element_text(size = 10),
+        title = element_text(size = 14),
+        strip.text = element_text(size=14),
+        plot.background = element_rect(fill = "white",
+                                       colour = "white")
+        #,panel.border = element_rect(color="black", fill=NA)
+  ) +
+  facet_wrap(~year, nrow = 2, scale = "fixed")
+
+map_mmr_trend
+
+ggsave("outputs/map_trend_mmr_coverage_facet.png", 
+       map_mmr_trend, width = 10, height = 5)
