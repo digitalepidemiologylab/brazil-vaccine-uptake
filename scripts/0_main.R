@@ -22,13 +22,16 @@ p_load(
   
   # Script descriptive analysis     
   # data.table, ggpubr, 
-  ggspatial, 
+  viridis, ggspatial, 
   graphics, stats, janitor, readr, stringr, tibble, utils,
   readxl, tools, padr, lubridate, gtsummary, DataExplorer,
   plotly, caTools, tm, tidytext, textcat, sf,
+  #rnaturalearthhires,
   fuzzyjoin, vroom,
+  webshot2,
   progress, gt,
   openai,
+  grid, cowplot,
   #    
   rnaturalearth  
   #utils, zoo

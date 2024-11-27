@@ -201,7 +201,7 @@ overall_total <- df_clean %>%
   select(year, everything())
 
 # Bind the overall total to the summary table
-df_table_total <- bind_rows(df_table, overall_total)
+#df_table_total <- bind_rows(df_table, overall_total)
 
 df_table %>% as_gt() %>% gt::gtsave("outputs/data_summary_year_stance.png")
 
@@ -698,34 +698,42 @@ df_clean_geo_all_plot_df <- df_clean_geo %>%
                              format(Total, big.mark = ",", trim = TRUE), 
                              " )", sep = ""))
 
+value_range_plot_states <- range(df_clean_geo_all_plot_df$sentiment, na.rm = TRUE)
 
 plot_states <- df_clean_geo_all_plot_df %>% 
-  # mutate(sentiment_cat = case_when(sentiment > 0 ~ "Positive",
-  #                                  sentiment < 0 ~ "Negative",
-  #                                  TRUE ~ "Neutral")) %>% 
-  filter(LocationCode != "BR") %>% 
+  #filter(LocationCode != "BR") %>% 
+  filter(LocationNameFull != "Rio Grande Do Norte") %>% # Because there are no tweets
   filter(!is.na(LocationNameFull)) %>% 
-  # mutate(sentiment_color = case_when(sentiment > 0 ~ "Positive",
-  #                                    sentiment < 0 ~ "Negative",
-  #                                    sentiment == 0 ~ "Neutral")) +
-  ggplot(aes(x = date, y = sentiment)) +
-  geom_line(colour = "dark green", size = 0.5) +
+  ggplot(aes(x = date, y = sentiment, colour = sentiment)) +
+  geom_line(
+    #colour = "dark green", 
+    size = 0.5) +
   # geom_point(aes(x = date, y = sentiment,
   #                colour = sentiment_cat),
   #            size = 1) +
   #scale_y_continuous(limits = c(-0.5, 0.5)) +
+  scale_color_gradientn(
+    colors = c("#4B0000", "#FF6666", "#FFFFFF", "#6699FF", "#000033"),  
+    limits = c(value_range_plot_states[1], value_range_plot_states[2]), 
+    values = scales::rescale(c(value_range_plot_states[1], -0.01, 0, 0.01, value_range_plot_states[2])),
+    name = "Twitter vaccine sentiment index (TVS)"
+  ) +
   scale_x_datetime(date_breaks = "6 months", 
                    #date_minor_breaks = "1 month", 
                    date_labels = "%b-%Y",
                    limits = c(min(df_clean_geo_all$date), 
                               max(df_clean_geo_all$date))) +
   geom_hline(yintercept=0,  linetype = "dashed", color = "red", size=0.5) +
-  ggtitle('7-day moving average of Twitter vaccine sentiment index in Brazil, January 2013 to December 2019') +
+  #ggtitle('7-day moving average of Twitter vaccine sentiment index in Brazil, January 2013 to December 2019') +
   labs(x = "Date (day, month and year)", y = "TVS index") +
   #geom_smooth(method = "loess", se = FALSE) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 90),
         plot.title = element_text(size = 10, hjust = 0.5),
+        legend.position="bottom",
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.key.width = unit(1, "cm"),
         axis.text = element_text(size = 10)) +
   facet_wrap(vars(label_plot), 
              #scales = "free_y", 
@@ -955,6 +963,7 @@ for (i in 2013:2019) {
 }
 
 ### All years in facet ----------
+# data
 world_br_all_facet <- world %>% 
   filter(sov_a3 == "BRA") %>% 
   arrange(iso_3166_2) %>% 
@@ -969,7 +978,7 @@ world_br_all_facet <- world %>%
 df_short <- world_br_all_facet %>% 
   select(LocationCode, sentiment)
 
-
+# title labels
 labels_plot <- NULL
 
 for (i in 2013:2019) {
@@ -985,6 +994,11 @@ for (i in 2013:2019) {
 }
 
 labels_plot_test <- c(paste(unique(world_br_all_facet$year), "test"))
+
+
+# map
+value_range <- range(world_br_all_facet$sentiment)
+extended_limits <- c(-0.2, max(world_br_all_facet$sentiment, na.rm = TRUE))
 
 map_all_facet <- world_br_all_facet %>% 
   # mutate(sentiment_cat = case_when(sentiment < -0.09104 ~ "< -0.09",
@@ -1023,8 +1037,17 @@ map_all_facet <- world_br_all_facet %>%
   ggplot() +
   geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
   geom_sf(aes(fill = sentiment), color = "black") +
-  scale_fill_viridis_c(option = "B",
-                       name = "Twitter vaccine \nsentiment index") +
+  #scale_fill_viridis_c(option = "B",
+  #                     name = "Twitter vaccine \nsentiment index") +
+  scale_fill_gradientn(
+    colors = c("#4B0000", "#FF6666", "#FFDADA", "#6699FF", "#000033"),
+    values = scales::rescale(c(value_range[1], -0.01, 0, 0.01, value_range[2])),
+    #limits = extended_limits,
+    breaks = c(-0.15, 0, 0.15, 0.30, 0.45),  
+    #breaks = c(-0.2, 0, 0.2, 0.4),  
+    #labels = c("-0.2", "0", "0.2", "0.4"),  # Format labels
+    name = "Twitter vaccine \nsentiment index"
+  ) +
   theme_void() +
   theme(legend.position = c(0.85, 0.3),
         legend.title = element_text(size = 12, hjust = 0.5),
@@ -1255,10 +1278,11 @@ map_measles_trend <- world %>%
                                 TRUE ~ "test")) %>% 
   ggplot() +
   geom_sf(data = world_clipped, fill = "gray90", color = "gray") +  # Adding this line plots the whole world
-  geom_sf(aes(fill = trend_mmr), color = "black") +
+  geom_sf(aes(fill = trend_measles), color = "black") +
   #scale_fill_viridis_c(option = "B",
   #                     name = "Measles cases") +
-  scale_fill_viridis_d(name = "Trend of measles cases") +
+  scale_fill_viridis_d(name = "Trend of measles cases",
+                       option = "viridis") +
   theme_void() +
   theme(legend.position = c(0.85, 0.3),
         legend.title = element_text(size = 12, hjust = 0.5),
