@@ -838,13 +838,13 @@ df_clean_geo_state_year_2013 <- df_clean_geo_state_by_year %>%
   filter(year == "2013") 
 
 # Save csv
-write_csv(df_clean_geo_state_year_2019, 'data/tweets_with_predicted_labels_state_year_2019.csv')
-write_csv(df_clean_geo_state_year_2018, 'data/tweets_with_predicted_labels_state_year_2018.csv')
-write_csv(df_clean_geo_state_year_2017, 'data/tweets_with_predicted_labels_state_year_2017.csv')
-write_csv(df_clean_geo_state_year_2016, 'data/tweets_with_predicted_labels_state_year_2016.csv')
-write_csv(df_clean_geo_state_year_2015, 'data/tweets_with_predicted_labels_state_year_2015.csv')
-write_csv(df_clean_geo_state_year_2014, 'data/tweets_with_predicted_labels_state_year_2014.csv')
-write_csv(df_clean_geo_state_year_2013, 'data/tweets_with_predicted_labels_state_year_2013.csv')
+# write_csv(df_clean_geo_state_year_2019, 'data/tweets_with_predicted_labels_state_year_2019.csv')
+# write_csv(df_clean_geo_state_year_2018, 'data/tweets_with_predicted_labels_state_year_2018.csv')
+# write_csv(df_clean_geo_state_year_2017, 'data/tweets_with_predicted_labels_state_year_2017.csv')
+# write_csv(df_clean_geo_state_year_2016, 'data/tweets_with_predicted_labels_state_year_2016.csv')
+# write_csv(df_clean_geo_state_year_2015, 'data/tweets_with_predicted_labels_state_year_2015.csv')
+# write_csv(df_clean_geo_state_year_2014, 'data/tweets_with_predicted_labels_state_year_2014.csv')
+# write_csv(df_clean_geo_state_year_2013, 'data/tweets_with_predicted_labels_state_year_2013.csv')
 
 ## Plot map -------------
 #devtools::install_github("ropensci/rnaturalearthhires")
