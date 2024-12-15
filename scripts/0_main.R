@@ -15,27 +15,12 @@ while (require("pacman") == FALSE) {
 }
 
 ## load packages
-p_load(
-  # Script annotations
-  tidyverse, vroom, purrr, tidyr,
-  # caret, 
-  
-  # Script descriptive analysis     
-  # data.table, ggpubr, 
-  viridis, ggspatial, 
+p_load(tidyverse, vroom, purrr, tidyr,viridis, ggspatial, 
   graphics, stats, janitor, readr, stringr, tibble, utils,
   readxl, tools, padr, lubridate, gtsummary, DataExplorer,
-  plotly, caTools, tm, tidytext, textcat, sf,
-  #rnaturalearthhires,
-  fuzzyjoin, vroom,
-  webshot2,
-  progress, gt,
-  openai,
-  grid, cowplot,
-  #    
-  rnaturalearth  
-  #utils, zoo
-  )
+  plotly, caTools, tm, tidytext, textcat, sf, fuzzyjoin, 
+  vroom, webshot2, ggpubr, progress, gt, openai,
+  grid, cowplot, rnaturalearth)
 
 # Annotations of tweets and full dataset ----------
 source('scripts/1b_annotations_all_tweets.R')
@@ -45,8 +30,3 @@ source('scripts/1_descriptive_analysis.R')
 
 # Datasets for machine learning models --------------
 source('scripts/2_Files_preparation_ML.R')
-
-# Check packages used in each script -------
-packages_annotations <- NCmisc::list.functions.in.file("scripts/1b_annotations_all_tweets.R")
-packages_descriptive <- NCmisc::list.functions.in.file("scripts/2_descriptive_analysis_mmr.R")
-packages_ML <- NCmisc::list.functions.in.file("scripts/2_Files_preparation_ML.R")

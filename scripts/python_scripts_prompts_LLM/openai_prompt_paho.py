@@ -151,7 +151,7 @@ for i in range(30632, len(combined_text4_df)):
 df_gpt = pd.DataFrame(list(zip(text, sent_gpt)),
         columns = ['text', 'sentiment_gpt'])
 
-df_gpt.to_csv('gpt4turbo_annotations_missing3_0_22035.csv')  
+df_gpt.to_csv('gpt4turbo_annotations_missing3_all.csv')  
 
 df_gpt_2.to_csv('gpt4turbo_annotations_missing3_22035_30631.csv')  
 
