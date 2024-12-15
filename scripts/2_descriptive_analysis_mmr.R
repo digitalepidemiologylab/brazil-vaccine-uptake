@@ -2,7 +2,7 @@
 #' Aim: Descriptive analysis of predicted annotated tweets for Brazil and vaccine uptake data
 #' Author: Laura Espinosa
 #' Date created: 26 July 2021
-#' Date updated: 05 February 2023
+#' Date updated: 15 December 2024
 
 # 2 - Import cleaned Twitter data ----------------
 message("Importing annotated data")
