@@ -89,7 +89,8 @@ df_mmr_trend <- df_mmr %>%
   mutate(trend_mmr = case_when(PC_COVERAGE > lag(PC_COVERAGE) ~ "increased",
                                PC_COVERAGE == lag(PC_COVERAGE) ~ "equal",
                                PC_COVERAGE < lag(PC_COVERAGE) ~ "decreased",
-                               .default = NA_character_)) %>% 
+                               .default = NA_character_),
+         trend_mmr_num = round(((PC_COVERAGE - lag(PC_COVERAGE))/abs(lag(PC_COVERAGE))) * 100, digits = 1)) %>% 
   ungroup()
   
 
@@ -116,7 +117,13 @@ df_measles_trend <- df_measles_raw %>%
   mutate(trend_measles = case_when(measles > lag(measles) ~ "increased",
                                measles == lag(measles) ~ "equal",
                                measles < lag(measles) ~ "decreased",
-                               .default = NA_character_)) %>% 
+                               .default = NA_character_),
+         trend_measles_num = round((measles - lag(measles))/abs(lag(measles)) * 100, 1),
+         trend_measles_num = case_when(trend_measles_num == "-Inf"~ -100,
+                                       trend_measles_num == "Inf" ~ 100,
+                                       trend_measles_num == "NaN" ~ 0,
+                                       .default = trend_measles_num),
+         year = as.double(year)) %>% 
   ungroup()
 
 
@@ -684,7 +691,8 @@ df_clean_geo_state_by_year_trend <- df_clean_geo_state_by_year %>%
   mutate(trend_sentiment = case_when(sentiment > lag(sentiment) ~ "increased",
                                sentiment == lag(sentiment) ~ "equal",
                                sentiment < lag(sentiment) ~ "decreased",
-                               .default = NA_character_)) %>% 
+                               .default = NA_character_),
+         trend_sentiment_num = round(((sentiment - lag(sentiment))/abs(lag(sentiment)))*100, digits = 1)) %>% 
   ungroup()
 
 ### Group data for each year and save csv -----------------
@@ -1272,3 +1280,60 @@ map_trend_all
 
 ggsave("outputs/map_trend_all.png", 
        map_trend_all, width = 15, height = 8)
+
+# Timeseries for trends per state -----------
+## TVS index ----------
+plot_sent_trend <- df_clean_geo_state_by_year_trend %>% 
+  ggplot(aes(x = year)) + 
+  geom_line(aes(y = trend_sentiment_num)) +
+  facet_wrap(~LocationCode,
+             nrow = 4, scale = "fixed")
+
+plot_sent_trend
+
+## Comparative timeline of trends --------------
+df_trend_num_all <- df_clean_geo_state_by_year_trend %>% 
+  left_join(df_mmr_trend, by = c("LocationCode", "year")) %>% 
+  select(-LocationCode) %>% 
+  left_join(df_measles_trend, by = c("LocationName", "year"))
+
+plot_trend_num_all <- df_trend_num_all %>% 
+  filter(!is.na(LocationName)) %>% 
+  ggplot(aes(x = year)) + 
+  geom_hline(yintercept = 0) +
+  geom_line(aes(y = trend_sentiment_num, colour = "TVS index trend"), size = 0.5) +
+  geom_line(aes(y = trend_mmr_num, colour = "MMR coverage trend"), size = 0.5)+
+  geom_line(aes(y = trend_measles_num, colour = "Measles cases per \n100,000 population trend"), size = 0.5) +
+  geom_point(aes(y = trend_sentiment_num, shape = "TVS index trend",
+                 colour = "TVS index trend"), 
+             size =2) +
+  geom_point(aes(y = trend_mmr_num, shape = "MMR coverage trend",
+                 colour = "MMR coverage trend"), size = 2)+
+  geom_point(aes(y = trend_measles_num, 
+                 shape = "Measles cases per \n100,000 population trend",
+                 colour = "Measles cases per \n100,000 population trend"), 
+             size = 2) +
+  scale_colour_manual(values = c("TVS index trend" = "#6699FF",
+                                 "MMR coverage trend" = "#756bb1",
+                                 "Measles cases per \n100,000 population trend" = "#31a354")) +
+  scale_shape_manual(values = c("TVS index trend" = 1,
+                                "MMR coverage trend" = 2,
+                                "Measles cases per \n100,000 population trend" = 0)) +
+  scale_x_continuous(breaks = c(2013,2014,2015,2016,2017,2018,2019))+
+  labs(y = "Yearly comparative trends", x = "Year",
+       shape = "Indicators",
+       colour = "Indicators") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 0.8, vjust = 1),
+        plot.title = element_text(size = 10, hjust = 0.5),
+        legend.background = element_rect(fill = "white", colour = "black", size = 0.5), 
+        legend.position= c(0.85, 0.1),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        legend.key.width = unit(1, "cm"),
+        axis.text = element_text(size = 10),
+        axis.line.x = element_line()) +
+  facet_wrap(~LocationName,
+             nrow = 4, scale = "free")
+
+plot_trend_num_all

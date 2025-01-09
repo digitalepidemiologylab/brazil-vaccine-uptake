@@ -1,0 +1,184 @@
+year,sentiment,trend_sentiment,trend_sentiment_num,PC_COVERAGE,LocationName,trend_mmr,trend_mmr_num,StatesCode,measles,trend_measles,trend_measles_num
+2013,0.20053475935828877,NA,NA,100.95,Acre,increased,16.5,AC,0,equal,0
+2014,0.18435754189944134,decreased,-8.1,98.53,Acre,decreased,-2.4,AC,0,equal,0
+2015,0.1732283464566929,decreased,-6,85.05,Acre,decreased,-13.7,AC,0,equal,0
+2016,0.12535612535612536,decreased,-27.6,77.45,Acre,decreased,-8.9,AC,0,equal,0
+2017,0.11281070745697896,decreased,-10,87.65,Acre,increased,13.2,AC,0,equal,0
+2018,0.022953328232593728,decreased,-79.7,80.29,Acre,decreased,-8.4,AC,0,equal,0
+2019,-0.09354413702239789,decreased,-507.5,87.12,Acre,increased,8.5,AC,0,equal,0
+2013,0.336283185840708,NA,NA,116.23,Alagoas,increased,20.2,AL,0,equal,0
+2014,0.2930918846411804,decreased,-12.8,115.05,Alagoas,decreased,-1,AL,0,equal,0
+2015,0.3038563829787234,increased,3.7,101.43,Alagoas,decreased,-11.8,AL,0,equal,0
+2016,0.2401263823064771,decreased,-21,102.79,Alagoas,increased,1.3,AL,0,equal,0
+2017,0.18622848200312989,decreased,-22.4,114.38,Alagoas,increased,11.3,AL,0,equal,0
+2018,0.12763960581886438,decreased,-31.5,103.2,Alagoas,decreased,-9.8,AL,0,equal,0
+2019,0.001008827238335435,decreased,-99.2,102.45,Alagoas,decreased,-0.7,AL,35,increased,100
+2013,0.3231292517006803,NA,NA,94.65,Amapa,increased,7.1,AP,0,equal,0
+2014,0.23027989821882952,decreased,-28.7,109.43,Amapa,increased,15.6,AP,0,equal,0
+2015,0.2839506172839506,increased,23.3,87.39,Amapa,decreased,-20.1,AP,0,equal,0
+2016,0.15940224159402241,decreased,-43.9,102,Amapa,increased,16.7,AP,0,equal,0
+2017,0.2619392185238784,increased,64.3,83.01,Amapa,decreased,-18.6,AP,0,equal,0
+2018,0.21428571428571427,decreased,-18.2,81.21,Amapa,decreased,-2.2,AP,0,equal,0
+2019,0.015873015873015872,decreased,-92.6,88.05,Amapa,increased,8.4,AP,2,increased,100
+2013,0.20518477661334805,NA,NA,98.73,Amazonas,decreased,-5.3,AM,0,equal,0
+2014,0.1864864864864865,decreased,-9.1,113.92,Amazonas,increased,15.4,AM,0,equal,0
+2015,0.20496566296883253,increased,9.9,94.21,Amazonas,decreased,-17.3,AM,0,equal,0
+2016,0.20656830080913852,increased,0.8,85.55,Amazonas,decreased,-9.2,AM,0,equal,0
+2017,0.15242105263157896,decreased,-26.2,90.39,Amazonas,increased,5.7,AM,0,equal,0
+2018,0.10428400750981397,decreased,-31.6,89.23,Amazonas,decreased,-1.3,AM,8789,increased,100
+2019,0.0022009714632665453,decreased,-97.9,93.59,Amazonas,increased,4.9,AM,4,decreased,-100
+2013,0.21469173589855706,NA,NA,111.73,Bahia,increased,10.9,BA,0,equal,0
+2014,0.1617255163224517,decreased,-24.7,120.65,Bahia,increased,8,BA,0,equal,0
+2015,0.24636614535418583,increased,52.3,91.27,Bahia,decreased,-24.4,BA,0,equal,0
+2016,0.16592592592592592,decreased,-32.7,85.87,Bahia,decreased,-5.9,BA,0,equal,0
+2017,0.10826493065383527,decreased,-34.8,87.44,Bahia,increased,1.8,BA,0,equal,0
+2018,0.045529664518261445,decreased,-57.9,81.2,Bahia,decreased,-7.1,BA,3,increased,100
+2019,-0.027838657029610633,decreased,-161.1,85.03,Bahia,increased,4.7,BA,80,increased,2566.7
+2013,0.26918995401485674,NA,NA,117.42,Ceara,increased,16.1,CE,1,increased,100
+2014,0.19669466269303712,decreased,-26.9,144.93,Ceara,increased,23.4,CE,840,increased,83900
+2015,0.2633863965267728,increased,33.9,108.94,Ceara,decreased,-24.8,CE,211,decreased,-74.9
+2016,0.22485380116959064,decreased,-14.6,117.62,Ceara,increased,8,CE,0,decreased,-100
+2017,0.21966255678131083,decreased,-2.3,109.36,Ceara,decreased,-7,CE,0,equal,0
+2018,0.05625252934034804,decreased,-74.4,111.32,Ceara,increased,1.8,CE,0,equal,0
+2019,-0.03183260610868703,decreased,-156.6,101.22,Ceara,decreased,-9.1,CE,19,increased,100
+2013,0.37074679628811313,NA,NA,105.8,Distrito Federal,increased,11.5,DF,1,increased,100
+2014,0.27526002971768204,decreased,-25.8,103.79,Distrito Federal,decreased,-1.9,DF,0,decreased,-100
+2015,0.29176149294492487,increased,6,68.03,Distrito Federal,decreased,-34.5,DF,0,equal,0
+2016,0.14238319048935583,decreased,-51.2,128.92,Distrito Federal,increased,89.5,DF,0,equal,0
+2017,0.11438043928719437,decreased,-19.7,88.29,Distrito Federal,decreased,-31.5,DF,0,equal,0
+2018,0.04432443448135317,decreased,-61.2,84.86,Distrito Federal,decreased,-3.9,DF,1,increased,100
+2019,-0.06167481383343232,decreased,-239.1,86.58,Distrito Federal,increased,2,DF,11,increased,1000
+2013,0.13743093922651933,NA,NA,107.24,Espirito Santo,increased,4,ES,1,increased,100
+2014,0.08396062536189924,decreased,-38.9,108.12,Espirito Santo,increased,0.8,ES,0,decreased,-100
+2015,0.1056376573617953,increased,25.8,95.82,Espirito Santo,decreased,-11.4,ES,0,equal,0
+2016,0.010124873439082012,decreased,-90.4,104.68,Espirito Santo,increased,9.2,ES,0,equal,0
+2017,-0.058394160583941604,decreased,-676.7,95.57,Espirito Santo,decreased,-8.7,ES,0,equal,0
+2018,-0.03488927831766767,increased,40.3,92.77,Espirito Santo,decreased,-2.9,ES,0,equal,0
+2019,-0.1165257081487448,decreased,-234,95.4,Espirito Santo,increased,2.8,ES,4,increased,100
+2013,0.22168441432720232,NA,NA,112.22,Goias,increased,5.5,GO,0,equal,0
+2014,0.20431059935045764,decreased,-7.8,121.79,Goias,increased,8.5,GO,0,equal,0
+2015,0.2390998593530239,increased,17,91.18,Goias,decreased,-25.1,GO,0,equal,0
+2016,0.10626441199077633,decreased,-55.6,86.17,Goias,decreased,-5.5,GO,0,equal,0
+2017,0.0881011608623549,decreased,-17.1,91.42,Goias,increased,6.1,GO,0,equal,0
+2018,0.006369426751592357,decreased,-92.8,87.45,Goias,decreased,-4.3,GO,0,equal,0
+2019,-0.08064828565893975,decreased,-1366.2,89.24,Goias,increased,2,GO,15,increased,100
+2013,0.22440944881889763,NA,NA,112.04,Maranhao,increased,10,MA,0,equal,0
+2014,0.18572418572418573,decreased,-17.2,127.02,Maranhao,increased,13.4,MA,0,equal,0
+2015,0.27334410339256865,increased,47.2,90,Maranhao,decreased,-29.1,MA,0,equal,0
+2016,0.19130978430759613,decreased,-30,80.75,Maranhao,decreased,-10.3,MA,0,equal,0
+2017,0.1973712561947856,increased,3.2,89.14,Maranhao,increased,10.4,MA,0,equal,0
+2018,0.04032459425717853,decreased,-79.6,82.86,Maranhao,decreased,-7,MA,0,equal,0
+2019,0.007302921168467387,decreased,-81.9,84.44,Maranhao,increased,1.9,MA,8,increased,100
+2013,0.2350230414746544,NA,NA,108.94,Mato Grosso,increased,14.2,MT,0,equal,0
+2014,0.11868131868131868,decreased,-49.5,118.32,Mato Grosso,increased,8.6,MT,0,equal,0
+2015,0.21724137931034482,increased,83,93.93,Mato Grosso,decreased,-20.6,MT,0,equal,0
+2016,0.056,decreased,-74.2,97.7,Mato Grosso,increased,4,MT,0,equal,0
+2017,0.1080669710806697,increased,93,96.57,Mato Grosso,decreased,-1.2,MT,0,equal,0
+2018,0.00995899238429994,decreased,-90.8,85.04,Mato Grosso,decreased,-11.9,MT,0,equal,0
+2019,-0.0606359378851368,decreased,-708.9,89.05,Mato Grosso,increased,4.7,MT,0,equal,0
+2013,0.16044776119402984,NA,NA,103.56,Mato Grosso Do Sul,increased,6.2,MS,0,equal,0
+2014,0.1700712589073634,increased,6,145.45,Mato Grosso Do Sul,increased,40.4,MS,0,equal,0
+2015,0.1405152224824356,decreased,-17.4,109.44,Mato Grosso Do Sul,decreased,-24.8,MS,0,equal,0
+2016,0.05734919286321156,decreased,-59.2,101.98,Mato Grosso Do Sul,decreased,-6.8,MS,0,equal,0
+2017,0.027737226277372264,decreased,-51.6,100.33,Mato Grosso Do Sul,decreased,-1.6,MS,0,equal,0
+2018,0.0010672358591248667,decreased,-96.2,99.91,Mato Grosso Do Sul,decreased,-0.4,MS,0,equal,0
+2019,-0.08981517135155949,decreased,-8515.7,106.85,Mato Grosso Do Sul,increased,6.9,MS,2,increased,100
+2013,0.16403933198064616,NA,NA,103.62,Minas Gerais,increased,0.4,MG,2,increased,100
+2014,0.08554763447828904,decreased,-47.8,111.06,Minas Gerais,increased,7.2,MG,0,decreased,-100
+2015,0.16379464285714285,increased,91.5,98.02,Minas Gerais,decreased,-11.7,MG,0,equal,0
+2016,0.0947275872826796,decreased,-42.2,99.46,Minas Gerais,increased,1.5,MG,0,equal,0
+2017,-0.0049723238577727745,decreased,-105.2,100.41,Minas Gerais,increased,1,MG,0,equal,0
+2018,-0.0042274192004594325,increased,15,96.29,Minas Gerais,decreased,-4.1,MG,0,equal,0
+2019,-0.05342828787366538,decreased,-1163.9,97.48,Minas Gerais,increased,1.2,MG,158,increased,100
+2013,0.06109324758842444,NA,NA,102.71,Para,decreased,-1.7,PA,0,equal,0
+2014,0.17045454545454544,increased,179,116.39,Para,increased,13.3,PA,0,equal,0
+2015,0.26756756756756755,increased,57,70.78,Para,decreased,-39.2,PA,0,equal,0
+2016,0.17559523809523808,decreased,-34.4,70.49,Para,decreased,-0.4,PA,0,equal,0
+2017,0.10467706013363029,decreased,-40.4,75.35,Para,increased,6.9,PA,0,equal,0
+2018,0.0589622641509434,decreased,-43.7,77.29,Para,increased,2.6,PA,84,increased,100
+2019,-0.021702838063439065,decreased,-136.8,81.78,Para,increased,5.8,PA,429,increased,410.7
+2013,0.30281995661605204,NA,NA,116.07,Paraiba,increased,20.8,PB,9,increased,100
+2014,0.2208316511909568,decreased,-27.1,121.94,Paraiba,increased,5.1,PB,0,decreased,-100
+2015,0.25652872639614305,increased,16.2,93.8,Paraiba,decreased,-23.1,PB,0,equal,0
+2016,0.21967470115618265,decreased,-14.4,95.13,Paraiba,increased,1.4,PB,0,equal,0
+2017,0.15291576673866092,decreased,-30.4,101,Paraiba,increased,6.2,PB,0,equal,0
+2018,0.035217487304040625,decreased,-77,95.35,Paraiba,decreased,-5.6,PB,0,equal,0
+2019,-0.026617981690215377,decreased,-175.6,101.73,Paraiba,increased,6.7,PB,66,increased,100
+2013,0.08273596176821983,NA,NA,106.82,Parana,increased,8.3,PR,0,equal,0
+2014,0.06551059730250482,decreased,-20.8,113.26,Parana,increased,6,PR,0,equal,0
+2015,0.1442979053529868,increased,120.3,97.93,Parana,decreased,-13.5,PR,0,equal,0
+2016,0.09824046920821114,decreased,-31.9,92.28,Parana,decreased,-5.8,PR,0,equal,0
+2017,0.03111495246326707,decreased,-68.3,96.44,Parana,increased,4.5,PR,0,equal,0
+2018,-0.05739051094890511,decreased,-284.4,89.35,Parana,decreased,-7.4,PR,0,equal,0
+2019,-0.10531833393814766,decreased,-83.5,94.11,Parana,increased,5.3,PR,1599,increased,100
+2013,0.33504138746551043,NA,NA,121.91,Pernambuco,increased,13.5,PE,200,increased,19900
+2014,0.20518134715025907,decreased,-38.8,109.95,Pernambuco,decreased,-9.8,PE,26,decreased,-87
+2015,0.30956306677658696,increased,50.9,97.67,Pernambuco,decreased,-11.2,PE,0,decreased,-100
+2016,0.24421416234887738,decreased,-21.1,112.89,Pernambuco,increased,15.6,PE,0,equal,0
+2017,0.18111455108359134,decreased,-25.8,113.14,Pernambuco,increased,0.2,PE,0,equal,0
+2018,0.09092910612065169,decreased,-49.8,101.8,Pernambuco,decreased,-10,PE,4,increased,100
+2019,0.039009144576918627,decreased,-57.1,100.44,Pernambuco,decreased,-1.3,PE,344,increased,8500
+2013,0.22388059701492538,NA,NA,108.03,Piaui,increased,6.1,PI,0,equal,0
+2014,0.14130434782608695,decreased,-36.9,97.79,Piaui,decreased,-9.5,PI,0,equal,0
+2015,0.33035714285714285,increased,133.8,79.86,Piaui,decreased,-18.3,PI,0,equal,0
+2016,0.28125,decreased,-14.9,80.44,Piaui,increased,0.7,PI,0,equal,0
+2017,0.3076923076923077,increased,9.4,86.69,Piaui,increased,7.8,PI,0,equal,0
+2018,0.08045977011494253,decreased,-73.9,86.52,Piaui,decreased,-0.2,PI,0,equal,0
+2019,0.13736263736263737,increased,70.7,88.49,Piaui,increased,2.3,PI,3,increased,100
+2013,0.15730337078651685,NA,NA,108.44,Rio De Janeiro,increased,12.1,RJ,0,equal,0
+2014,-0.01098901098901099,decreased,-107,113.36,Rio De Janeiro,increased,4.5,RJ,3,increased,100
+2015,0.1282051282051282,increased,1266.7,102.31,Rio De Janeiro,decreased,-9.7,RJ,0,decreased,-100
+2016,0.04477611940298507,decreased,-65.1,109.06,Rio De Janeiro,increased,6.6,RJ,0,equal,0
+2017,-0.18505338078291814,decreased,-513.3,106.91,Rio De Janeiro,decreased,-2,RJ,0,equal,0
+2018,-0.0959349593495935,increased,48.2,98.84,Rio De Janeiro,decreased,-7.5,RJ,20,increased,100
+2019,-0.1504297994269341,decreased,-56.8,99.03,Rio De Janeiro,increased,0.2,RJ,463,increased,2215
+NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+2013,-0.004733009708737864,NA,NA,95.77,Rio Grande Do Sul,increased,6.5,RS,0,equal,0
+2014,-0.013530415008527573,decreased,-185.9,107.04,Rio Grande Do Sul,increased,11.8,RS,0,equal,0
+2015,0.04740235115661737,increased,450.3,87.52,Rio Grande Do Sul,decreased,-18.2,RS,0,equal,0
+2016,-0.024038911233748014,decreased,-150.7,88.27,Rio Grande Do Sul,increased,0.9,RS,0,equal,0
+2017,-0.024960709993528705,decreased,-3.8,89.69,Rio Grande Do Sul,increased,1.6,RS,0,equal,0
+2018,-0.04308030266048328,decreased,-72.6,89.44,Rio Grande Do Sul,decreased,-0.3,RS,47,increased,100
+2019,-0.09768786127167631,decreased,-126.8,93.07,Rio Grande Do Sul,increased,4.1,RS,100,increased,112.8
+2013,0.31343283582089554,NA,NA,112.61,Rondonia,increased,11.8,RO,0,equal,0
+2014,0.2582781456953642,decreased,-17.6,145.73,Rondonia,increased,29.4,RO,0,equal,0
+2015,0.1595744680851064,decreased,-38.2,108.51,Rondonia,decreased,-25.5,RO,0,equal,0
+2016,0.18461538461538463,increased,15.7,109.94,Rondonia,increased,1.3,RO,0,equal,0
+2017,0.11513157894736842,decreased,-37.6,110.83,Rondonia,increased,0.8,RO,0,equal,0
+2018,0.1386861313868613,increased,20.5,100.37,Rondonia,decreased,-9.4,RO,2,increased,100
+2019,-0.06421356421356421,decreased,-146.3,105.82,Rondonia,increased,5.4,RO,0,decreased,-100
+2013,0.226890756302521,NA,NA,84.39,Roraima,decreased,-2.1,RR,0,equal,0
+2014,0.2564102564102564,increased,13,110.1,Roraima,increased,30.5,RR,0,equal,0
+2015,0.25544554455445545,decreased,-0.4,107.54,Roraima,decreased,-2.3,RR,1,increased,100
+2016,0.25595238095238093,increased,0.2,89.8,Roraima,decreased,-16.5,RR,0,decreased,-100
+2017,0.21865889212827988,decreased,-14.6,92.19,Roraima,increased,2.7,RR,0,equal,0
+2018,0.1045510455104551,decreased,-52.2,96.32,Roraima,increased,4.5,RR,368,increased,100
+2019,-0.07800121876904327,decreased,-174.6,72.3,Roraima,decreased,-24.9,RR,1,decreased,-99.7
+2013,0.04878048780487805,NA,NA,102.05,Santa Catarina,increased,5.4,SC,1,increased,100
+2014,-0.02920057443752992,decreased,-159.9,111.93,Santa Catarina,increased,9.7,SC,0,decreased,-100
+2015,0.08591885441527446,increased,394.2,100.63,Santa Catarina,decreased,-10.1,SC,0,equal,0
+2016,0,decreased,-100,95.28,Santa Catarina,decreased,-5.3,SC,0,equal,0
+2017,0.09425675675675675,increased,Inf,95.58,Santa Catarina,increased,0.3,SC,0,equal,0
+2018,-0.013040778306768785,decreased,-113.8,90.5,Santa Catarina,decreased,-5.3,SC,0,equal,0
+2019,-0.0869366068156834,decreased,-566.7,95.78,Santa Catarina,increased,5.8,SC,297,increased,100
+2013,0.06644060003448474,NA,NA,103.4,Sao Paulo,increased,4.7,SP,5,increased,400
+2014,0.07506555277760839,increased,13,107.19,Sao Paulo,increased,3.7,SP,7,increased,40
+2015,0.173116388155966,increased,130.6,96.69,Sao Paulo,decreased,-9.8,SP,2,decreased,-71.4
+2016,0.07595001275184902,decreased,-56.1,92.73,Sao Paulo,decreased,-4.1,SP,0,decreased,-100
+2017,0.06200463947419293,decreased,-18.4,96.33,Sao Paulo,increased,3.9,SP,0,equal,0
+2018,-0.020313718693127654,decreased,-132.8,90.76,Sao Paulo,decreased,-5.8,SP,7,increased,100
+2019,-0.014846942119868027,increased,26.9,93.67,Sao Paulo,increased,3.2,SP,18049,increased,257742.9
+2013,0.3119402985074627,NA,NA,115.95,Sergipe,increased,16.6,SE,0,equal,0
+2014,0.25524769101595296,decreased,-18.2,95.76,Sergipe,decreased,-17.4,SE,0,equal,0
+2015,0.4269535673839185,increased,67.3,93.08,Sergipe,decreased,-2.8,SE,0,equal,0
+2016,0.22961104140526975,decreased,-46.2,92.02,Sergipe,decreased,-1.1,SE,0,equal,0
+2017,0.20575539568345325,decreased,-10.4,96.67,Sergipe,increased,5.1,SE,0,equal,0
+2018,0.08677098150782361,decreased,-57.8,92.4,Sergipe,decreased,-4.4,SE,4,increased,100
+2019,0.039095438865465695,decreased,-54.9,91.86,Sergipe,decreased,-0.6,SE,6,increased,50
+2013,0.2978723404255319,NA,NA,105.14,Tocantins,increased,13.6,TO,0,equal,0
+2014,0.1829787234042553,decreased,-38.6,108.18,Tocantins,increased,2.9,TO,0,equal,0
+2015,0.3006993006993007,increased,64.3,92.68,Tocantins,decreased,-14.3,TO,0,equal,0
+2016,0.2103448275862069,decreased,-30,92.47,Tocantins,decreased,-0.2,TO,0,equal,0
+2017,0.1503267973856209,decreased,-28.5,95.27,Tocantins,increased,3,TO,0,equal,0
+2018,0.1851063829787234,increased,23.1,88.75,Tocantins,decreased,-6.8,TO,0,equal,0
+2019,0.04495747266099635,decreased,-75.7,90.36,Tocantins,increased,1.8,TO,0,equal,0
