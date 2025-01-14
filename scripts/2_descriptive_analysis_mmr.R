@@ -1395,6 +1395,7 @@ df_trend_all_pairs <- df_trend_all_lags %>%
   tally(name = "count") %>% 
   filter(value != "NA_NA") %>% # 3,172 without NA_NA combinations
   filter(!str_detect(value, "NA")) %>%  # 2,600 without any NA
+  filter(!str_detect(value, "equal")) %>%  # 1,346 without "equal"
   select(indicators, lag, value, count) %>% 
   pivot_wider(
     names_from = value,
