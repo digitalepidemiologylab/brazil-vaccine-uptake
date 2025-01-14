@@ -1337,3 +1337,78 @@ plot_trend_num_all <- df_trend_num_all %>%
              nrow = 4, scale = "free")
 
 plot_trend_num_all
+
+## Pair-wise comparative of trends -----------
+df_trend_all_lags <- df_trend_num_all %>% 
+  select(year, LocationName, trend_sentiment, trend_mmr, trend_measles) %>% 
+  group_by(LocationName) %>% 
+  arrange(LocationName, year) %>% 
+  mutate(
+    trend_sentiment_lag0 = trend_sentiment,
+    trend_sentiment_lag1 = lag(trend_sentiment, 1),
+    trend_sentiment_lag2 = lag(trend_sentiment, 2),
+    trend_mmr_lag0 = trend_mmr,
+    trend_mmr_lag1 = lag(trend_mmr, 1),
+    trend_mmr_lag2 = lag(trend_mmr, 2),
+    trend_measles_lag0 = trend_measles,
+    trend_measles_lag1 = lag(trend_measles, 1),
+    trend_measles_lag2 = lag(trend_measles, 2)
+  ) %>% 
+  ungroup() 
+
+df_trend_all_pairs <- df_trend_all_lags %>%
+  select(year, LocationName, contains("lag")) %>% 
+  mutate(trend_sentiment_mmr_0 = paste(trend_sentiment_lag0, trend_mmr_lag0, sep = "_"),
+         trend_sentiment_mmr_1 = paste(trend_sentiment_lag0, trend_mmr_lag1, sep = "_"),
+         trend_sentiment_mmr_2 = paste(trend_sentiment_lag0, trend_mmr_lag2, sep = "_"),
+         
+         trend_sentiment_measles_0 = paste(trend_sentiment_lag0, trend_measles_lag0, sep = "_"),
+         trend_sentiment_measles_1 = paste(trend_sentiment_lag0, trend_measles_lag1, sep = "_"),
+         trend_sentiment_measles_2 = paste(trend_sentiment_lag0, trend_measles_lag2, sep = "_"),
+         
+         trend_measles_mmr_0 = paste(trend_measles_lag0, trend_mmr_lag0, sep = "_"),
+         trend_measles_mmr_1 = paste(trend_measles_lag0, trend_mmr_lag1, sep = "_"),
+         trend_measles_mmr_2 = paste(trend_measles_lag0, trend_mmr_lag2, sep = "_"),
+         
+         trend_measles_sentiment_0 = paste(trend_measles_lag0, trend_sentiment_lag0, sep = "_"),
+         trend_measles_sentiment_1 = paste(trend_measles_lag0, trend_sentiment_lag1, sep = "_"),
+         trend_measles_sentiment_2 = paste(trend_measles_lag0, trend_sentiment_lag2, sep = "_"),
+         
+         trend_mmr_measles_0 = paste(trend_mmr_lag0, trend_measles_lag0, sep = "_"),
+         trend_mmr_measles_1 = paste(trend_mmr_lag0, trend_measles_lag1, sep = "_"),
+         trend_mmr_measles_2 = paste(trend_mmr_lag0, trend_measles_lag2, sep = "_"),
+         
+         trend_mmr_sentiment_0 = paste(trend_mmr_lag0, trend_sentiment_lag0, sep = "_"),
+         trend_mmr_sentiment_1 = paste(trend_mmr_lag0, trend_sentiment_lag1, sep = "_"),
+         trend_mmr_sentiment_2 = paste(trend_mmr_lag0, trend_sentiment_lag2, sep = "_")) %>% 
+  select(year, LocationName, contains("_0"), contains("_1"), contains("_2")) %>%  # 183 rows and 18 combinations = 3,294 
+  pivot_longer(
+    cols = starts_with("trend"), # Select all columns starting with "trend"
+    names_to = "indicator_lag", # Combine indicator and lag into one column
+    values_to = "value"         # Store the values of trend columns in the "value" column
+  ) %>%
+  # Extract lag and indicator from column names
+  separate(indicator_lag, into = c("indicators", "lag"), sep = "_(?=\\d+$)", remove = FALSE) %>%
+  mutate(lag = as.numeric(lag)) %>% # Convert lag from character to numeric
+  # Group by lag, indicator, and value to tally the counts
+  group_by(lag, indicators, value) %>%
+  tally(name = "count") %>% 
+  filter(value != "NA_NA") %>% # 3,172 without NA_NA combinations
+  filter(!str_detect(value, "NA")) %>%  # 2,600 without any NA
+  select(indicators, lag, value, count) %>% 
+  pivot_wider(
+    names_from = value,
+    values_from = count,
+    values_fill = 0
+  ) %>% 
+  arrange(indicators) %>% 
+  mutate(total = rowSums(across(where(is.numeric)))) %>% 
+  mutate(across(
+    where(is.numeric) & !c(total),  # Select numeric columns excluding row_sum
+    ~ round((. / total) * 100, digits = 1),
+    .names = "{col}_percent"
+  )) %>% 
+  select(indicators, lag, contains("percent"), total)
+
+df_trend_all_pairs %>% write_csv("data/pairwise_comparison_trends.csv")  
+
