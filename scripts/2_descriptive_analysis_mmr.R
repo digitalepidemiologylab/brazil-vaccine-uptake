@@ -593,7 +593,7 @@ plot_states <- df_clean_geo_all_plot_df %>%
   ) +
   scale_x_datetime(date_breaks = "6 months", 
                    #date_minor_breaks = "1 month", 
-                   date_labels = "%b-%Y",
+                   date_labels = "%d-%b-%Y",
                    limits = c(min(df_clean_geo_all$date), 
                               max(df_clean_geo_all$date))) +
   geom_hline(yintercept=0,  linetype = "dashed", color = "red", size=0.5) +
@@ -601,7 +601,7 @@ plot_states <- df_clean_geo_all_plot_df %>%
   labs(x = "Date (day, month and year)", y = "TVS index") +
   #geom_smooth(method = "loess", se = FALSE) +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 90),
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
         plot.title = element_text(size = 10, hjust = 0.5),
         legend.position="bottom",
         legend.text = element_text(size = 12),

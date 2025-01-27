@@ -26,7 +26,7 @@ p_load(tidyverse, vroom, purrr, tidyr,viridis, ggspatial,
 source('scripts/1b_annotations_all_tweets.R')
 
 # Descriptive analysis -----------
-source('scripts/1_descriptive_analysis.R')
+source('scripts/2_descriptive_analysis_mmr.R')
 
 # Datasets for machine learning models --------------
 source('scripts/2_Files_preparation_ML.R')
