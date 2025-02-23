@@ -72,27 +72,27 @@ df_pop_year <- df_pop_clean %>%
 load("./data/immunization_master_data.RData")
 
 # https://www.synapse.org/Synapse:syn25148356/files/
-df_mmr <- sipni_data %>% 
-  filter(SCOPE == 3) %>% 
+df_mmr <- sipni_data %>%
+  filter(SCOPE == 3) %>%
   filter(INDICATOR == "FL_Y1_MMR1") %>%
-  filter(YEAR >= 2012 & YEAR <= 2019) %>% 
-  select(LOCAL_NAME, YEAR, PC_COVERAGE) %>% 
-  rename(StatesCode = LOCAL_NAME) %>% 
-  left_join(br_states, by = "StatesCode") %>% 
-  select(-StatesCode) %>% 
-  rename(year = YEAR) %>% 
-  left_join(br[c("LocationCode", "LocationName")], by = "LocationName")  
+  filter(YEAR >= 2012 & YEAR <= 2019) %>%
+  select(LOCAL_NAME, YEAR, PC_COVERAGE) %>%
+  rename(StatesCode = LOCAL_NAME) %>%
+  left_join(br_states, by = "StatesCode") %>%
+  select(-StatesCode) %>%
+  rename(year = YEAR) %>%
+  left_join(br[c("LocationCode", "LocationName")], by = "LocationName")
 
-df_mmr_trend <- df_mmr %>% 
-  group_by(LocationName) %>% 
-  arrange(LocationName, year) %>% 
+df_mmr_trend <- df_mmr %>%
+  group_by(LocationName) %>%
+  arrange(LocationName, year) %>%
   mutate(trend_mmr = case_when(PC_COVERAGE > lag(PC_COVERAGE) ~ "increased",
                                PC_COVERAGE == lag(PC_COVERAGE) ~ "equal",
                                PC_COVERAGE < lag(PC_COVERAGE) ~ "decreased",
                                .default = NA_character_),
-         trend_mmr_num = round(((PC_COVERAGE - lag(PC_COVERAGE))/abs(lag(PC_COVERAGE))) * 100, digits = 1)) %>% 
+         trend_mmr_num = round(((PC_COVERAGE - lag(PC_COVERAGE))/abs(lag(PC_COVERAGE))) * 100, digits = 1)) %>%
   ungroup()
-  
+
 
 
 ## f) Import measles cases per region and year ----------------
@@ -145,6 +145,10 @@ df_table <- df_clean %>%
   tbl_summary(by = year, digits = list(Stance ~ 0)) %>% 
   add_overall()
 df_table
+
+df_table_tibble <- df_table %>% as_tibble() %>% slice(-1) %>% 
+  rename(`**Stance**` = `**Characteristic**`) %>% 
+  write_csv("outputs/table1_manuscript.csv")
 
 overall_total <- df_clean %>% 
   mutate(Stance = sent_gpt) %>% 
@@ -617,8 +621,12 @@ plot_states <- df_clean_geo_all_plot_df %>%
 plot_states
 
 # save plot
-ggsave("outputs/twitter_sentiment_br_states.png", plot_states,
+ggsave("outputs/twitter_sentiment_br_states_fig1.png", plot_states,
       width = 10, height = 12)
+
+
+ggsave("outputs/fig1.pdf", plot_states,
+       width = 10, height = 12)
 
 # Summary of positives and negatives per state
 trend_time_state <- df_clean_geo_all_plot_df %>% 
@@ -935,7 +943,10 @@ map_all_facet
 
 #ggplotly(map_all_facet)
 
-ggsave("outputs/map_sentiment_2013_2019_facet.png", 
+ggsave("outputs/map_sentiment_2013_2019_facet_fig2.png", 
+       map_all_facet, width = 10, height = 5)
+
+ggsave("outputs/fig2.pdf", 
        map_all_facet, width = 10, height = 5)
 
 ### All years in facet (trend) --------------
@@ -1117,7 +1128,10 @@ map_measles <- world %>%
 
 map_measles
 
-ggsave("outputs/map_measles_2013_2019_facet.png", 
+ggsave("outputs/map_measles_2013_2019_facet_fig4.png", 
+       map_measles, width = 10, height = 5)
+
+ggsave("outputs/fig4.pdf", 
        map_measles, width = 10, height = 5)
 
 ### Maps for trends of measles cases -----------
@@ -1227,7 +1241,10 @@ map_mmr <- world %>%
 
 map_mmr
 
-ggsave("outputs/map_mmr_coverage_facet.png", 
+ggsave("outputs/map_mmr_coverage_facet_fig3.png", 
+       map_mmr, width = 10, height = 5)
+
+ggsave("outputs/fig3.pdf", 
        map_mmr, width = 10, height = 5)
 
 ### Map for trend of mmr coverage -------------
@@ -1278,8 +1295,12 @@ map_trend_all <- ggarrange(plotlist = plot_arrange,
   
 map_trend_all  
 
-ggsave("outputs/map_trend_all.png", 
+ggsave("outputs/map_trend_all_fig5.png", 
        map_trend_all, width = 15, height = 8)
+
+ggsave("outputs/fig5.pdf", 
+       map_trend_all, width = 15, height = 8)
+
 
 # Timeseries for trends per state -----------
 ## TVS index ----------
