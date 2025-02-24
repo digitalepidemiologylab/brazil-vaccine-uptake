@@ -4,3 +4,5 @@
 
 # Ensure that Python files are properly detected
 *.py linguist-detectable=true
+
+*.html linguist-generated=true
