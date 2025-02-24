@@ -1,0 +1,6 @@
+# Ensure that R files are properly detected
+*.R linguist-detectable=true
+*.r linguist-detectable=true
+
+# Ensure that Python files are properly detected
+*.py linguist-detectable=true
